@@ -21,14 +21,14 @@ export function KitchenHeader({ kitchen }: { kitchen: Kitchen }) {
           {/* Closed state is stated prominently rather than discovered at
               checkout, and it carries the REASON — "closed until 11am" is
               actionable where "unavailable" is not. */}
-          {kitchen.is_accepting_orders ? (
+          {kitchen.is_open ? (
             <Badge tone="success">Open</Badge>
           ) : (
             <Badge tone="danger">Closed</Badge>
           )}
         </div>
 
-        {!kitchen.is_accepting_orders && kitchen.closed_reason && (
+        {!kitchen.is_open && kitchen.closed_reason && (
           <p className="mt-3 rounded-[--radius] bg-danger-soft px-3 py-2 text-sm text-danger">
             {kitchen.closed_reason}
           </p>

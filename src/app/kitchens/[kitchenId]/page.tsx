@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation'
 import { KitchenHeader } from '@/components/menu/kitchen-header'
 import { MenuItemCard } from '@/components/menu/menu-item-card'
-import { ApiError, request } from '@/lib/api/client'
-import type { Menu } from '@/lib/api/types'
+import { getMenu } from '@/lib/api/queries'
+import {
+  breadcrumbJsonLd,
+  jsonLdScript,
+  restaurantJsonLd,
+} from '@/lib/seo'
 import type { Metadata } from 'next'
 
 /**
@@ -12,37 +16,29 @@ import type { Metadata } from 'next'
  */
 type PageProps = { params: Promise<{ kitchenId: string }> }
 
-async function getMenu(kitchenId: string): Promise<Menu | null> {
-  try {
-    return await request<Menu>(`/kitchens/${kitchenId}/menu`, {
-      // Public read: no bearer token, and sending one would be pointless.
-      auth: false,
-      // `fetch` is NOT cached by default in this version, so caching is opt-in.
-      // 60s is a deliberate compromise: the menu is the hottest read in the
-      // system and changes rarely, but a price change must not take minutes to
-      // appear. The backend also invalidates its own cache on write.
-      revalidate: 60,
-    })
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return null
-    // Anything else is a real failure. Rethrowing lets error.tsx handle it
-    // rather than rendering an empty menu as though the kitchen had no food.
-    throw err
-  }
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { kitchenId } = await params
   const menu = await getMenu(kitchenId)
   if (!menu) return { title: 'Kitchen not found' }
 
+  const cuisines = menu.kitchen.cuisines.join(', ')
+  const description =
+    menu.kitchen.description ||
+    `Order ${cuisines || 'food'} from ${menu.kitchen.name} in ${menu.kitchen.city}. ` +
+      `See the full menu with prices and order for delivery.`
+
   return {
     title: menu.kitchen.name,
-    description:
-      menu.kitchen.description ||
-      `Order from ${menu.kitchen.name}${
-        menu.kitchen.cuisines.length ? ` — ${menu.kitchen.cuisines.join(', ')}` : ''
-      }.`,
+    description,
+    // Canonical per kitchen, so a menu reached via a filter or a tracking
+    // parameter does not split its ranking across duplicate URLs.
+    alternates: { canonical: `/kitchens/${kitchenId}` },
+    openGraph: {
+      title: `${menu.kitchen.name} — menu and prices`,
+      description,
+      url: `/kitchens/${kitchenId}`,
+      type: 'website',
+    },
   }
 }
 
@@ -56,7 +52,28 @@ export default async function KitchenMenuPage({ params }: PageProps) {
   const itemCount = categories.reduce((n, c) => n + c.items.length, 0)
 
   return (
-    <main className="pb-24">
+    <div className="pb-24">
+      {/*
+        Restaurant + Menu structured data. This is the highest-leverage SEO on
+        the whole site: Google renders rich results for these types, so ratings,
+        price range and individual dishes can appear directly in search. None of
+        it is inferred from the page text.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(restaurantJsonLd(menu.kitchen, menu))}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScript(
+          breadcrumbJsonLd([
+            { name: 'Chowk', path: '/' },
+            { name: 'Kitchens', path: '/kitchens' },
+            { name: menu.kitchen.name, path: `/kitchens/${kitchenId}` },
+          ]),
+        )}
+      />
+
       <KitchenHeader kitchen={menu.kitchen} />
 
       <div className="mx-auto max-w-2xl px-4 sm:px-6">
@@ -84,7 +101,7 @@ export default async function KitchenMenuPage({ params }: PageProps) {
           ))
         )}
       </div>
-    </main>
+    </div>
   )
 }
 

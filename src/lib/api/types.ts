@@ -147,9 +147,19 @@ export type Kitchen = {
   description?: string
   cuisines: string[]
   city: string
-  /** False when closed, paused, or outside opening hours. */
-  is_accepting_orders: boolean
-  /** Why it cannot take an order. Empty when it can. */
+  latitude: number
+  longitude: number
+  /**
+   * False when closed, paused, or outside opening hours.
+   *
+   * The field is `is_open`, verified against the running API. An earlier version
+   * of this file guessed `is_open`, which is the Go domain method
+   * name but NOT the JSON tag — so it read `undefined`, and every kitchen
+   * rendered as closed. A hand-written type produces exactly this failure: no
+   * compile error, no runtime error, just a silently wrong UI.
+   */
+  is_open: boolean
+  /** Why it cannot take an order. Absent when it can. */
   closed_reason?: string
   avg_prep_minutes: number
   rating_average: number
@@ -163,10 +173,15 @@ export type Menu = {
   categories: MenuCategory[]
 }
 
-export type NearbyKitchen = {
-  kitchen: Kitchen
-  distance_m: number
-  is_open: boolean
+/**
+ * A kitchen in a proximity search.
+ *
+ * FLAT, not `{ kitchen, distance_m }` — the API spreads the kitchen fields and
+ * adds `distance_m` alongside them. Verified against the running endpoint.
+ */
+export type NearbyKitchen = Kitchen & {
+  /** Straight-line metres. Absent if the search had no origin. */
+  distance_m?: number
 }
 
 // ---------------------------------------------------------------------------

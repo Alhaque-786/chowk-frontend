@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
  */
 export default function Error({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main className="grid min-h-[60dvh] place-items-center px-4">
+    <div className="grid min-h-[60dvh] place-items-center px-4">
       {/* Spacing via the column's gap rather than margins on each child:
           sibling margins collapse and double in ways gap does not. */}
       <div className="flex max-w-sm flex-col items-center gap-3 text-center">
@@ -25,6 +25,6 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
         </p>
         <Button onClick={reset}>Try again</Button>
       </div>
-    </main>
+    </div>
   )
 }

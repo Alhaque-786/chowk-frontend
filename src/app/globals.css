@@ -48,6 +48,17 @@
   --non-veg: #9b2c2c;
   --egg: #b8860b;
 
+  /* Ink for text sitting ON a semantic fill. White clears 4.5:1 on the dark
+     light-mode green, but NOT on the lifted dark-mode green -- so the pairing is
+     a token rather than a hardcoded text-white at each call site. */
+  --on-veg: #ffffff;
+  --on-warning: #ffffff;
+
+  /* How much to knock back the hardcoded food gradients. They are deliberately
+     fixed hues (turmeric is turmeric in either theme), but at full saturation
+     they glare against a dark ground. */
+  --food-tile-dim: 0;
+
   /* --- State */
   --success: #0a7a3d;
   --warning: #a1620a;
@@ -96,6 +107,11 @@
     --non-veg: #e07b7b;
     --egg: #d9a93c;
 
+    /* Dark ink on the lifted greens: white on #4caf72 is only ~2.9:1. */
+    --on-veg: #10240f;
+    --on-warning: #241a05;
+    --food-tile-dim: 0.22;
+
     --success: #4caf72;
     --warning: #d9a93c;
     --danger: #e07b7b;
@@ -134,6 +150,10 @@
   --non-veg: #e07b7b;
   --egg: #d9a93c;
 
+  --on-veg: #10240f;
+  --on-warning: #241a05;
+  --food-tile-dim: 0.22;
+
   --success: #4caf72;
   --warning: #d9a93c;
   --danger: #e07b7b;
@@ -171,6 +191,8 @@
   --color-veg: var(--veg);
   --color-non-veg: var(--non-veg);
   --color-egg: var(--egg);
+  --color-on-veg: var(--on-veg);
+  --color-on-warning: var(--on-warning);
 
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -218,6 +240,19 @@ h1, h2, h3 {
   font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   letter-spacing: -0.02em;
   text-wrap: balance;
+}
+
+/* Knocks back a fixed food gradient in dark mode.
+   The hues stay the same in both themes on purpose -- turmeric is turmeric -- but
+   full saturation against a #14120f ground glares, so a theme-driven scrim sits
+   over the tile instead of maintaining two sets of gradients. */
+.food-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: var(--food-tile-dim);
+  pointer-events: none;
 }
 
 /* The non-veg mark is a triangle inside a square, per FSSAI labelling. Tailwind
