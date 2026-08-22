@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { cn } from '@/lib/cn'
+import { SectionHeading } from '@/components/ui/section-heading'
 
 /**
  * The cuisine browse rail.
@@ -38,27 +39,45 @@ export function CuisineRail() {
     containScroll: 'trimSnaps',
     align: 'start',
   })
-  const [canPrev, setCanPrev] = useState(false)
-  const [canNext, setCanNext] = useState(false)
+  /*
+    The arrows' enabled state lives inside embla, not in React -- embla mutates
+    it on every drag frame without telling React. So it is read as an external
+    store rather than mirrored into useState.
 
-  const sync = useCallback(() => {
-    if (!embla) return
-    setCanPrev(embla.canScrollPrev())
-    setCanNext(embla.canScrollNext())
-  }, [embla])
+    The mirrored version had to call sync() in the effect body to catch the
+    initial state (embla is already initialised by the time the effect runs, so
+    its 'init' event has been and gone), and that synchronous setState on mount
+    is the cascading-render pattern React 19 flags. Subscribing instead means
+    there is no initial catch-up render at all: the very first render reads the
+    live value.
+  */
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (!embla) return () => {}
+      embla.on('select', onStoreChange).on('reInit', onStoreChange)
+      return () => {
+        embla.off('select', onStoreChange).off('reInit', onStoreChange)
+      }
+    },
+    [embla],
+  )
 
-  useEffect(() => {
-    if (!embla) return
-    sync()
-    embla.on('select', sync).on('reInit', sync)
-  }, [embla, sync])
+  // Booleans, so referential equality holds and the snapshot cannot loop.
+  const canPrev = useSyncExternalStore(
+    subscribe,
+    () => embla?.canScrollPrev() ?? false,
+    () => false,
+  )
+  const canNext = useSyncExternalStore(
+    subscribe,
+    () => embla?.canScrollNext() ?? false,
+    () => false,
+  )
 
   return (
     <div className="relative">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-xl font-bold text-ink">
-          What are you after?
-        </h2>
+      <div className="flex items-end justify-between gap-4">
+        <SectionHeading eyebrow="Browse by craving" title="What are you after?" />
 
         {/* Arrows on pointer devices only. On touch you swipe, and a pair of
             unusable buttons is just clutter. */}
@@ -85,7 +104,7 @@ export function CuisineRail() {
                 className="group flex w-[4.5rem] flex-col items-center gap-2"
               >
                 <span
-                  className="food-tile relative grid size-[4.5rem] place-items-center overflow-hidden rounded-full transition-transform duration-200 group-hover:scale-105"
+                  className="relative grid size-[4.5rem] place-items-center overflow-hidden rounded-full transition-transform duration-200 group-hover:scale-105"
                   style={{
                     background: `linear-gradient(135deg, ${cuisine.from} 0%, ${cuisine.to} 100%)`,
                   }}

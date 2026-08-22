@@ -29,7 +29,7 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-[--radius] border border-rule-strong bg-surface',
+        'inline-flex items-center rounded-xl border border-rule-strong bg-surface',
         disabled && 'opacity-50',
       )}
     >

@@ -23,7 +23,7 @@ export function CartBar() {
   const bar = (
     <Link
       href="/cart"
-      className="flex items-center justify-between gap-4 rounded-[--radius] bg-brand px-4 py-3.5 text-brand-ink shadow-lg"
+      className="flex items-center justify-between gap-4 rounded-xl bg-brand px-4 py-3.5 text-brand-ink shadow-lg"
     >
       <span className="flex items-center gap-2.5">
         <ShoppingBag className="size-5" />

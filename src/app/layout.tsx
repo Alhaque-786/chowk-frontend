@@ -85,10 +85,9 @@ export const viewport: Viewport = {
   // an accessibility failure rather than a design choice.
   width: 'device-width',
   initialScale: 1,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: THEME_GROUND.light },
-    { media: '(prefers-color-scheme: dark)', color: THEME_GROUND.dark },
-  ],
+  // Single value: this is a light-only design, so there is no dark variant for
+  // the browser chrome to match.
+  themeColor: THEME_GROUND,
 }
 
 export default function RootLayout({
@@ -106,7 +105,7 @@ export default function RootLayout({
         */}
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-[--radius] focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-brand focus:px-4 focus:py-2 focus:text-brand-ink"
         >
           Skip to content
         </a>

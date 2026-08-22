@@ -35,7 +35,7 @@ export function Input({ label, error, hint, prefix, required, ...rest }: InputPr
 
       <div
         className={cn(
-          'flex items-center rounded-[--radius] border bg-surface',
+          'flex items-center rounded-xl border bg-surface',
           'focus-within:ring-2 focus-within:ring-brand/25',
           error ? 'border-danger' : 'border-rule-strong focus-within:border-brand',
         )}

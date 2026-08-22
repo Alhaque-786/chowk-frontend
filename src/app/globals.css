@@ -15,16 +15,27 @@
    decoration, which matters because in India that mark is regulated, not
    stylistic.
 
-   Every colour is defined at :root, redefined for system-dark, and redefined
-   again for an explicit dark choice — so a component never reads a token that
-   has no value in the current state.
+   LIGHT ONLY, deliberately.
+
+   This is a single-theme design, not an omission. Every major food app —
+   Swiggy, Zomato, Deliveroo, DoorDash — ships a light consumer surface and no
+   dark mode, and the reason is appetite: warm food tones on a dark ground go
+   muddy and unappealing, and photography that sells a biryani on paper reads as
+   a nightclub menu on black. The whole palette is tuned for that, so a dark
+   variant would not be the same design dimmed — it would be a different one.
+
+   `color-scheme: light` is set explicitly so the browser paints form controls,
+   scrollbars and autofill in light regardless of the OS setting. Without it, a
+   customer in system-dark gets dark native inputs on a cream page.
    =========================================================================== */
 
 :root {
+  color-scheme: light;
+
   /* --- Ground: warm paper, not white. A pure #FFF reads clinical next to food. */
-  --ground: #fbf9f5;
+  --ground: #FAF6EF;
   --surface: #ffffff;
-  --surface-sunk: #f3f0ea;
+  --surface-sunk: #F2EDE3;
   --surface-raised: #ffffff;
 
   /* --- Ink: warm near-black. Pure black on warm paper looks like a printing error. */
@@ -33,8 +44,8 @@
   --ink-faint: #8b857c;
   --ink-inverse: #fbf9f5;
 
-  --rule: #e5e0d6;
-  --rule-strong: #cbc4b6;
+  --rule: #EBE4D8;
+  --rule-strong: #D6CDBC;
 
   /* --- Brand: indigo. Used for actions and identity, never for food state. */
   --brand: #2f3f7a;
@@ -48,16 +59,12 @@
   --non-veg: #9b2c2c;
   --egg: #b8860b;
 
-  /* Ink for text sitting ON a semantic fill. White clears 4.5:1 on the dark
-     light-mode green, but NOT on the lifted dark-mode green -- so the pairing is
-     a token rather than a hardcoded text-white at each call site. */
+  /* Ink for text sitting ON a semantic fill, as a token rather than a hardcoded
+     text-white at each call site -- so the pairing stays correct if a fill
+     changes. */
   --on-veg: #ffffff;
   --on-warning: #ffffff;
 
-  /* How much to knock back the hardcoded food gradients. They are deliberately
-     fixed hues (turmeric is turmeric in either theme), but at full saturation
-     they glare against a dark ground. */
-  --food-tile-dim: 0;
 
   /* --- State */
   --success: #0a7a3d;
@@ -74,97 +81,26 @@
   --radius-sm: 0.375rem;
   --radius-lg: 1rem;
 
-  --shadow-sm: 0 1px 2px rgb(28 26 23 / 0.05);
-  --shadow: 0 1px 3px rgb(28 26 23 / 0.07), 0 6px 16px -8px rgb(28 26 23 / 0.10);
-  --shadow-lg: 0 2px 6px rgb(28 26 23 / 0.08), 0 16px 32px -12px rgb(28 26 23 / 0.16);
-}
-
-/* System dark — nothing stamped on the root. Guarded so an explicit light
-   choice still wins over a dark OS. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #14120f;
-    --surface: #1c1a17;
-    --surface-sunk: #100f0c;
-    --surface-raised: #24211d;
-
-    --ink: #f0ece4;
-    --ink-soft: #b0a99e;
-    --ink-faint: #7d766c;
-    --ink-inverse: #14120f;
-
-    --rule: #2e2b26;
-    --rule-strong: #443f38;
-
-    /* Indigo lifted so it clears a dark warm ground; the dark-on-dark version
-       of a brand colour is a different colour, not the same one dimmed. */
-    --brand: #8b9ddb;
-    --brand-hover: #a3b2e6;
-    --brand-soft: #22283f;
-    --brand-ink: #14120f;
-
-    --veg: #4caf72;
-    --non-veg: #e07b7b;
-    --egg: #d9a93c;
-
-    /* Dark ink on the lifted greens: white on #4caf72 is only ~2.9:1. */
-    --on-veg: #10240f;
-    --on-warning: #241a05;
-    --food-tile-dim: 0.22;
-
-    --success: #4caf72;
-    --warning: #d9a93c;
-    --danger: #e07b7b;
-    --danger-soft: #2b1d1d;
-
-    --accent: #e08a3c;
-    --accent-soft: #2c2015;
-
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 6px 16px -8px rgb(0 0 0 / 0.6);
-    --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px -12px rgb(0 0 0 / 0.7);
-  }
-}
-
-/* Explicit dark choice wins in the other direction too. */
-:root[data-theme="dark"] {
-  --ground: #14120f;
-  --surface: #1c1a17;
-  --surface-sunk: #100f0c;
-  --surface-raised: #24211d;
-
-  --ink: #f0ece4;
-  --ink-soft: #b0a99e;
-  --ink-faint: #7d766c;
-  --ink-inverse: #14120f;
-
-  --rule: #2e2b26;
-  --rule-strong: #443f38;
-
-  --brand: #8b9ddb;
-  --brand-hover: #a3b2e6;
-  --brand-soft: #22283f;
-  --brand-ink: #14120f;
-
-  --veg: #4caf72;
-  --non-veg: #e07b7b;
-  --egg: #d9a93c;
-
-  --on-veg: #10240f;
-  --on-warning: #241a05;
-  --food-tile-dim: 0.22;
-
-  --success: #4caf72;
-  --warning: #d9a93c;
-  --danger: #e07b7b;
-  --danger-soft: #2b1d1d;
-
-  --accent: #e08a3c;
-  --accent-soft: #2c2015;
-
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 6px 16px -8px rgb(0 0 0 / 0.6);
-  --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px -12px rgb(0 0 0 / 0.7);
+  /* Shadows are WARM-tinted (a brown-black, not neutral grey) and layered in
+     three stops. A single hard shadow reads as a sticker; stacked soft ones read
+     as an object sitting on paper, which is where the sense of depth comes from
+     without any 3D transform. */
+  --shadow-sm: 0 1px 2px rgb(74 56 32 / 0.06);
+  --shadow:
+    0 1px 2px rgb(74 56 32 / 0.05),
+    0 4px 8px -2px rgb(74 56 32 / 0.06),
+    0 12px 24px -8px rgb(74 56 32 / 0.10);
+  --shadow-lg:
+    0 2px 4px rgb(74 56 32 / 0.05),
+    0 8px 16px -4px rgb(74 56 32 / 0.08),
+    0 24px 48px -12px rgb(74 56 32 / 0.16);
+  --shadow-brand: 0 8px 24px -8px rgb(47 63 122 / 0.35);
+  /* For elements that float clear of the page -- the hero stack. Deep, wide and
+     soft, because a floating object casts a diffuse shadow, not a crisp one. */
+  --shadow-float:
+    0 4px 8px rgb(74 56 32 / 0.06),
+    0 16px 32px -8px rgb(74 56 32 / 0.12),
+    0 48px 80px -24px rgb(74 56 32 / 0.28);
 }
 
 /* Tailwind v4 is CSS-first: @theme maps tokens onto utility names, so
@@ -205,13 +141,20 @@
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
 
-  --radius-DEFAULT: var(--radius);
-  --radius-sm: var(--radius-sm);
-  --radius-lg: var(--radius-lg);
+  /* Generous radii. Large corners read as friendly and premium, which is the
+     register a food app wants; tight corners read as enterprise software. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
 
   --shadow-sm: var(--shadow-sm);
-  --shadow-DEFAULT: var(--shadow);
+  --shadow-md: var(--shadow);
   --shadow-lg: var(--shadow-lg);
+  --shadow-brand: var(--shadow-brand);
+  --shadow-float: var(--shadow-float);
 }
 
 /* ---------------------------------------------------------------------------
@@ -242,19 +185,6 @@ h1, h2, h3 {
   text-wrap: balance;
 }
 
-/* Knocks back a fixed food gradient in dark mode.
-   The hues stay the same in both themes on purpose -- turmeric is turmeric -- but
-   full saturation against a #14120f ground glares, so a theme-driven scrim sits
-   over the tile instead of maintaining two sets of gradients. */
-.food-tile::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: #000;
-  opacity: var(--food-tile-dim);
-  pointer-events: none;
-}
-
 /* The non-veg mark is a triangle inside a square, per FSSAI labelling. Tailwind
    has no clip-path utility, and an SVG per item would be heavier than one class
    on a menu of fifty dishes. */
@@ -280,5 +210,98 @@ h1, h2, h3 {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================================================================
+   DEPTH AND TEXTURE
+   ---------------------------------------------------------------------------
+   Squarespace-grade pages get their richness from photography. We have none
+   yet, so the depth has to come from the only other places it can: layered
+   translucency, real perspective transforms, and a trace of grain so large
+   flat fills do not read as vector art. These are the primitives for that.
+   =========================================================================== */
+
+/* Film grain. A perfectly smooth gradient looks synthetic at large sizes; a
+   fraction of a percent of noise is the difference between "CSS background"
+   and "printed paper". Inlined as an SVG data URI so it costs no request. */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* A warm mesh wash: three offset radial gradients rather than one linear one.
+   Overlapping radials never band the way a two-stop linear gradient does, and
+   the colour shifts across the surface instead of marching in one direction. */
+.mesh-warm {
+  background-color: var(--ground);
+  background-image:
+    radial-gradient(at 12% 8%, rgb(232 164 76 / 0.22) 0px, transparent 55%),
+    radial-gradient(at 88% 0%, rgb(194 84 44 / 0.14) 0px, transparent 50%),
+    radial-gradient(at 70% 92%, rgb(47 63 122 / 0.10) 0px, transparent 55%);
+}
+
+/* --- The 3D card stack ---------------------------------------------------
+   Real perspective, not a fake skew. The scene owns the vanishing point and
+   the children rotate inside it, so the tilt is consistent between cards and
+   the whole group reads as one object viewed from an angle. */
+.scene-3d {
+  perspective: 1400px;
+  perspective-origin: 60% 40%;
+}
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition:
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hovering the SCENE settles the whole stack flat, rather than each card
+   reacting alone -- the stack behaves like one thing you picked up. */
+.scene-3d:hover .card-3d {
+  transform: rotateY(0deg) rotateX(0deg) translateZ(0) translateY(0);
+}
+
+/* Gentle float, offset per card so the group breathes instead of pulsing in
+   lockstep. Suppressed under reduced-motion, along with every other loop. */
+@keyframes float-y {
+  0%, 100% { translate: 0 0; }
+  50%      { translate: 0 -10px; }
+}
+
+.float-slow { animation: float-y 7s ease-in-out infinite; }
+.float-mid  { animation: float-y 6s ease-in-out infinite 0.8s; }
+.float-fast { animation: float-y 5.5s ease-in-out infinite 1.6s; }
+
+/* A continuous ribbon. The track holds two identical copies and translates by
+   exactly -50%, so the seam lands where the second copy begins and the loop is
+   invisible. Any other distance visibly jumps. */
+@keyframes marquee-x {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-x 38s linear infinite;
+}
+
+/* Fades the ribbon into the page at both ends instead of clipping mid-word. */
+.edge-fade {
+  mask-image: linear-gradient(
+    to right,
+    transparent, black 6rem, black calc(100% - 6rem), transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-slow, .float-mid, .float-fast, .marquee-track {
+    animation: none;
   }
 }

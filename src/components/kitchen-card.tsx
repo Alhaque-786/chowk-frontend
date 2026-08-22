@@ -32,12 +32,14 @@ export function KitchenCard({
       <Pressable>
         <Link
           href={`/kitchens/${kitchen.id}`}
-          className="group block overflow-hidden rounded-lg border border-rule bg-surface shadow-sm transition-shadow hover:shadow-lg"
+          // Depth from a layered warm shadow rather than a border, and a small
+          // lift on hover. The translate is what makes it feel like an object on
+          // paper instead of a rectangle drawn on it.
+          className="group block overflow-hidden rounded-2xl bg-surface shadow-md ring-1 ring-rule/70 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-lg"
         >
           <div className="relative aspect-[16/10] w-full">
             <DishImage
               name={kitchen.name}
-              foodType="veg"
               className="absolute inset-0 size-full transition-transform duration-500 group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
               priority={priority}

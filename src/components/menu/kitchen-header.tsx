@@ -29,7 +29,7 @@ export function KitchenHeader({ kitchen }: { kitchen: Kitchen }) {
         </div>
 
         {!kitchen.is_open && kitchen.closed_reason && (
-          <p className="mt-3 rounded-[--radius] bg-danger-soft px-3 py-2 text-sm text-danger">
+          <p className="mt-3 rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
             {kitchen.closed_reason}
           </p>
         )}

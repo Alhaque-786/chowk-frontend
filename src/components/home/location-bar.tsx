@@ -22,7 +22,7 @@ export function LocationBar({ city }: { city: string }) {
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="group flex min-w-0 items-center gap-2 rounded-[--radius] px-1 py-1 text-left"
+          className="group flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left"
         >
           <MapPin className="size-4 shrink-0 text-brand" />
           <span className="min-w-0">
@@ -42,7 +42,7 @@ export function LocationBar({ city }: { city: string }) {
           the interaction feels identical and the home page stays light. */}
       <Link
         href="/search"
-        className="mt-3 flex items-center gap-2.5 rounded-[--radius] border border-rule-strong bg-surface px-3.5 py-3 text-sm text-ink-faint transition-colors hover:border-brand/40"
+        className="mt-3 flex items-center gap-2.5 rounded-xl border border-rule-strong bg-surface px-3.5 py-3 text-sm text-ink-faint transition-colors hover:border-brand/40"
       >
         <Search className="size-4 shrink-0" />
         <span>Search for biryani, dosa, thali…</span>
@@ -66,7 +66,7 @@ export function LocationBar({ city }: { city: string }) {
             the identity module, and shipping a fake picker that silently does
             nothing would be worse than showing the one city we actually serve.
           */}
-          <p className="rounded-[--radius] bg-brand-soft px-3 py-2.5 text-sm text-brand">
+          <p className="rounded-xl bg-brand-soft px-3 py-2.5 text-sm text-brand">
             We are only in {city} for now. More cities as kitchens sign up.
           </p>
           <p className="text-sm leading-relaxed text-ink-soft">

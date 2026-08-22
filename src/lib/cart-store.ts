@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 /**
  * The cart item count, for the header badge.
@@ -16,6 +16,14 @@ import { useEffect, useState } from 'react'
  *
  * Deliberately NOT the source of truth. Checkout reads the server cart, so a
  * stale count here shows a wrong badge — cosmetic — rather than a wrong order.
+ *
+ * Read through useSyncExternalStore rather than useState+useEffect. That is what
+ * the hook is for: localStorage plus an event is literally an external store, and
+ * the effect version had to set state on mount to pick up the stored value, which
+ * costs a second render on every page load and is exactly the cascading-render
+ * pattern React 19 warns about. useSyncExternalStore also takes a separate SERVER
+ * snapshot, so the hydration-mismatch problem the effect was working around is
+ * handled by the API instead of by us.
  */
 
 const EVENT = 'chowk:cart-changed'
@@ -43,30 +51,30 @@ export function setCartCount(count: number): void {
   window.dispatchEvent(new CustomEvent(EVENT, { detail: count }))
 }
 
+/**
+ * Module-scope subscribe, so the identity is stable across renders. Passing an
+ * inline closure here would make React resubscribe on every render.
+ *
+ * `storage` covers the other-tab case: adding to the cart in one tab should
+ * update the badge in another.
+ */
+function subscribe(onStoreChange: () => void): () => void {
+  window.addEventListener(EVENT, onStoreChange)
+  window.addEventListener('storage', onStoreChange)
+  return () => {
+    window.removeEventListener(EVENT, onStoreChange)
+    window.removeEventListener('storage', onStoreChange)
+  }
+}
+
+/** The server snapshot. 0 because there is no request-scoped cart to read. */
+function getServerSnapshot(): number {
+  return 0
+}
+
 export function useCartCount(): number {
-  // Starts at 0 on both server and client so the first client render matches the
-  // server HTML. Reading localStorage in the initial state would produce a
-  // hydration mismatch, which React reports as an error and resolves by
-  // discarding the server HTML.
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    setCount(read())
-
-    const onChange = (e: Event) => {
-      setCount((e as CustomEvent<number>).detail ?? read())
-    }
-    // `storage` covers the other-tab case: adding to the cart in one tab should
-    // update the badge in another.
-    const onStorage = () => setCount(read())
-
-    window.addEventListener(EVENT, onChange)
-    window.addEventListener('storage', onStorage)
-    return () => {
-      window.removeEventListener(EVENT, onChange)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [])
-
-  return count
+  // `read` returns a number, not an object, so referential equality holds and
+  // React will not loop. Returning a fresh object from a snapshot is the one way
+  // to get this hook wrong.
+  return useSyncExternalStore(subscribe, read, getServerSnapshot)
 }

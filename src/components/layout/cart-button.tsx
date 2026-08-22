@@ -16,7 +16,7 @@ export function CartButton() {
   return (
     <Link
       href="/cart"
-      className="relative inline-flex min-h-10 items-center gap-2 rounded-[--radius] border border-rule-strong bg-surface px-3 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk"
+      className="relative inline-flex min-h-10 items-center gap-2 rounded-xl border border-rule-strong bg-surface px-3 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk"
       // The count is in the accessible name, so a screen reader hears "Cart, 3
       // items" rather than reading the badge as a stray number.
       aria-label={count > 0 ? `Cart, ${count} item${count === 1 ? '' : 's'}` : 'Cart, empty'}

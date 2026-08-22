@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import { cn } from '@/lib/cn'
-import type { FoodType } from '@/lib/api/types'
 
 /**
  * A dish image, with a DESIGNED fallback for the (currently usual) case of no
@@ -49,14 +48,12 @@ function initials(name: string): string {
 export function DishImage({
   name,
   src,
-  foodType,
   className,
   sizes = '(max-width: 640px) 33vw, 160px',
   priority = false,
 }: {
   name: string
   src?: string
-  foodType?: FoodType
   className?: string
   sizes?: string
   priority?: boolean
@@ -87,7 +84,7 @@ export function DishImage({
   return (
     <div
       className={cn(
-        'food-tile relative grid place-items-center overflow-hidden',
+        'relative grid place-items-center overflow-hidden',
         className,
       )}
       style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}

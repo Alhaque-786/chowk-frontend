@@ -42,7 +42,7 @@ function HeaderLink({ href, children }: { href: string; children: React.ReactNod
   return (
     <Link
       href={href}
-      className="rounded-[--radius-sm] px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
+      className="rounded-lg px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
     >
       {children}
     </Link>

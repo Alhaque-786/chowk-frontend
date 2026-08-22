@@ -6,10 +6,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Reveal } from '@/components/ui/reveal'
 import { LocationBar } from '@/components/home/location-bar'
 import { CuisineRail } from '@/components/home/cuisine-rail'
+import { CuisineMarquee } from '@/components/home/cuisine-marquee'
+import { HeroStack } from '@/components/home/hero-stack'
 import { OffersRail } from '@/components/home/offers-rail'
 import { KitchenList } from '@/components/home/kitchen-list'
 import { DishRail } from '@/components/home/dish-rail'
 import { getNearbyKitchens, getOffers, getPopularDishes } from '@/lib/api/queries'
+import { SectionHeading } from '@/components/ui/section-heading'
 import { jsonLdScript, organizationJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 
@@ -47,14 +50,15 @@ export default function HomePage() {
       {/* --- Location and search, above everything, because they decide whether
               anything below is relevant. --- */}
       <section className="border-b border-rule bg-surface">
-        <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
           <LocationBar city={CITY} />
         </div>
       </section>
 
       <Hero />
+      <CuisineMarquee />
 
-      <div className="mx-auto flex max-w-5xl flex-col gap-12 px-4 py-10 sm:px-6 sm:py-12">
+      <div className="mx-auto flex max-w-6xl flex-col gap-14 px-4 py-12 sm:px-6 sm:py-16">
         <Reveal>
           <CuisineRail />
         </Reveal>
@@ -92,42 +96,116 @@ export default function HomePage() {
  */
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-rule bg-ground">
-      {/* A soft warm wash, the one decorative flourish on the page. Positioned
-          behind content with pointer-events off so it can never intercept a tap. */}
+    <section className="mesh-warm grain relative overflow-hidden border-b border-rule">
+      {/* Layered washes ON TOP of the mesh, offset from the content so the light
+          appears to come from the top-right corner and fall away. All decorative,
+          all pointer-events-none so none of them can ever swallow a tap. */}
       <div
-        className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full opacity-[0.13] blur-3xl"
-        style={{ background: 'radial-gradient(circle, #E08A3C 0%, transparent 70%)' }}
+        className="pointer-events-none absolute -right-40 -top-56 size-[46rem] rounded-full opacity-40 blur-3xl"
+        style={{ background: 'radial-gradient(circle, #F5C77E 0%, transparent 68%)' }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -bottom-64 -left-40 size-[36rem] rounded-full opacity-30 blur-3xl"
+        style={{ background: 'radial-gradient(circle, #C2542C 0%, transparent 70%)' }}
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
-        <h1 className="max-w-2xl font-display text-[2.5rem] font-extrabold leading-[1.03] tracking-tight text-ink sm:text-6xl">
-          Dinner from down
-          <br />
-          <span className="text-brand">the road.</span>
-        </h1>
-
-        <p className="mt-5 max-w-xl text-base leading-relaxed text-ink-soft sm:text-lg">
-          Real menus at the kitchen&rsquo;s own prices — not marked up to cover a
-          30% commission. Order in a few taps and watch it come to you.
-        </p>
-
+      <div className="relative mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20 lg:py-24">
         {/*
-          ONE call to action, because this page has ONE audience.
-          An earlier version put "List your kitchen" beside it, which made a
-          customer landing page spend half its hero recruiting merchants. Partner
-          recruitment lives on /partner and is linked from the footer — the same
-          separation Swiggy and Zomato use, and for the same reason: a customer
-          deciding what to eat is not also deciding whether to open a restaurant.
+          Two columns from lg up, one below. The copy leads on mobile because the
+          stack is decoration -- on a phone the proposition should occupy the
+          fold, not the artwork.
         */}
-        <div className="mt-8">
-          <Link href="/kitchens">
-            <Button size="lg">
-              Find food near me
-              <ArrowRight className="size-4" />
-            </Button>
-          </Link>
+        <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-surface/80 px-3.5 py-1.5 text-xs font-semibold tracking-wide text-brand ring-1 ring-brand/15 backdrop-blur">
+              <span className="relative flex size-1.5">
+                {/* A live dot. Signals "kitchens are cooking right now", which is
+                    the one thing a hungry visitor wants to know first. */}
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-veg opacity-70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-veg" />
+              </span>
+              Now delivering in {CITY}
+            </span>
+
+            {/*
+              Fluid display type via clamp(), not a stack of breakpoint classes.
+              A headline this large has to track the viewport continuously --
+              stepped sizes leave it either cramped at 900px or overflowing at
+              420px, and the whole editorial effect depends on it filling its
+              measure exactly.
+            */}
+            <h1
+              className="mt-6 max-w-[20ch] font-display font-extrabold leading-[0.98] tracking-[-0.03em] text-ink"
+              style={{ fontSize: 'clamp(2.75rem, 6.2vw, 4.75rem)' }}
+            >
+              Dinner from
+              <br />
+              down the{' '}
+              {/* The one gradient-filled word on the page. Any more and the
+                  emphasis stops meaning anything. */}
+              <span
+                className="bg-clip-text text-transparent"
+                style={{ backgroundImage: 'linear-gradient(100deg, #C2542C 0%, #E08A3C 55%, #C9A227 100%)' }}
+              >
+                road
+              </span>
+              .
+            </h1>
+
+            <p className="mt-6 max-w-lg text-base leading-relaxed text-ink-soft sm:text-lg">
+              Real menus at the kitchen&rsquo;s own prices — not marked up to cover
+              a 30% commission. Order in a few taps and watch it come to you.
+            </p>
+
+            {/*
+              ONE call to action, because this page has ONE audience. An earlier
+              version put "List your kitchen" beside it, which made a customer
+              landing page spend half its hero recruiting merchants. Partner
+              recruitment lives on /partner and is linked from the footer -- the
+              same separation Swiggy and Zomato use, and for the same reason: a
+              customer deciding what to eat is not also deciding whether to open
+              a restaurant.
+            */}
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Link href="/kitchens">
+                <Button size="lg">
+                  Find food near me
+                  <ArrowRight className="size-4" />
+                </Button>
+              </Link>
+              <Link href="/offers">
+                <Button size="lg" variant="secondary">
+                  See today&rsquo;s offers
+                </Button>
+              </Link>
+            </div>
+
+            <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-rule pt-7">
+              {[
+                { value: '28', unit: 'min', label: 'Typical delivery' },
+                { value: '6', unit: '%', label: 'Commission we charge' },
+                { value: '0', unit: '₹', label: 'Surge pricing, ever' },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <dd className="font-display text-3xl font-extrabold tracking-tight text-ink">
+                    {/* .tabular locks digit widths, so these never jitter if the
+                        numbers become live figures from analytics later. */}
+                    <span className="tabular">{stat.value}</span>
+                    <span className="text-lg text-accent">{stat.unit}</span>
+                  </dd>
+                  <dt className="mt-1 text-xs leading-snug text-ink-faint">{stat.label}</dt>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {/* Hidden below lg rather than reflowed: three tilted cards at phone
+              width would be a cramped smudge, and the copy is the priority. */}
+          <div className="hidden lg:block">
+            <HeroStack />
+          </div>
         </div>
       </div>
     </section>
@@ -165,20 +243,13 @@ async function Kitchens() {
 
   return (
     <Reveal>
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-display text-xl font-bold text-ink">
-          Kitchens in {CITY}
-        </h2>
-        {kitchens.length > 3 && (
-          <Link
-            href="/kitchens"
-            className="rounded-sm text-sm font-semibold text-brand hover:underline"
-          >
-            See all
-          </Link>
-        )}
-      </div>
-      <div className="mt-4">
+      <SectionHeading
+        eyebrow={`${kitchens.length} cooking near you`}
+        title={`Kitchens in ${CITY}`}
+        // Only offered when there is actually more to see than the list shows.
+        action={kitchens.length > 3 ? { href: '/kitchens', label: 'See all' } : undefined}
+      />
+      <div className="mt-5">
         <KitchenList kitchens={kitchens} />
       </div>
     </Reveal>
@@ -212,15 +283,13 @@ function WhyChowk() {
   ]
 
   return (
-    <section className="rounded-lg border border-rule bg-surface p-6 sm:p-8">
-      <h2 className="font-display text-xl font-bold text-ink">
-        Why the prices are lower here
-      </h2>
+    <section className="rounded-2xl bg-surface p-6 shadow-md ring-1 ring-rule/70 sm:p-8">
+      <SectionHeading eyebrow="How this works" title="Why the prices are lower here" />
 
       <ul className="mt-6 grid gap-6 sm:grid-cols-3">
         {points.map(({ Icon, title, body }) => (
           <li key={title} className="flex flex-col gap-2.5">
-            <span className="grid size-9 place-items-center rounded-[--radius] bg-brand-soft text-brand">
+            <span className="grid size-9 place-items-center rounded-xl bg-brand-soft text-brand">
               <Icon className="size-4.5" />
             </span>
             <h3 className="font-display text-[0.9375rem] font-bold leading-snug text-ink">

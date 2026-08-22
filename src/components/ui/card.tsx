@@ -12,7 +12,7 @@ export function Card({
   return (
     <As
       className={cn(
-        'rounded-[--radius] border border-rule bg-surface shadow-sm',
+        'rounded-2xl border border-rule bg-surface shadow-sm',
         className,
       )}
     >

@@ -1,6 +1,7 @@
 import { Tag } from 'lucide-react'
 import { formatRupees } from '@/lib/format'
 import type { Offer } from '@/lib/api/types'
+import { SectionHeading } from '@/components/ui/section-heading'
 
 /**
  * Live offers.
@@ -14,9 +15,7 @@ export function OffersRail({ offers }: { offers: Offer[] }) {
 
   return (
     <div>
-      <h2 className="font-display text-xl font-bold text-ink">
-        Offers on right now
-      </h2>
+      <SectionHeading eyebrow="Live deals" title="Offers on right now" />
 
       {/* Scrolls inside its own container, so the page body never moves
           sideways. The negative margin lets cards bleed to the screen edge,
@@ -26,7 +25,7 @@ export function OffersRail({ offers }: { offers: Offer[] }) {
           {offers.map((offer) => (
             <li
               key={offer.code}
-              className="flex min-w-[16rem] shrink-0 flex-col gap-2 rounded-lg border border-accent/25 bg-accent-soft p-4"
+              className="flex min-w-[16rem] shrink-0 flex-col gap-2 rounded-2xl bg-accent-soft p-4 ring-1 ring-accent/20"
             >
               <span className="inline-flex w-fit items-center gap-1.5 rounded-md border border-dashed border-accent/50 bg-surface px-2 py-1">
                 <Tag className="size-3 text-accent" />

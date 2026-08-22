@@ -43,7 +43,7 @@ export function KitchenList({ kitchens }: { kitchens: NearbyKitchen[] }) {
       />
 
       {visible.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed border-rule-strong px-6 py-10 text-center">
+        <div className="mt-6 rounded-2xl border border-dashed border-rule-strong px-6 py-10 text-center">
           <p className="font-display text-base font-semibold text-ink">
             Nothing matches those filters
           </p>
@@ -81,7 +81,7 @@ export function KitchenList({ kitchens }: { kitchens: NearbyKitchen[] }) {
  */
 function EmptyState() {
   return (
-    <div className="rounded-lg border border-dashed border-rule-strong px-6 py-14 text-center">
+    <div className="rounded-2xl border border-dashed border-rule-strong px-6 py-14 text-center">
       <p className="font-display text-lg font-bold text-ink">
         No kitchens here yet
       </p>

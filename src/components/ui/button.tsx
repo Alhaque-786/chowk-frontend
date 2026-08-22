@@ -9,10 +9,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANTS: Record<Variant, string> = {
+  // A brand-tinted shadow rather than a neutral one: the main action should read
+  // as raised and coloured, not as a flat rectangle with a grey drop.
   primary:
-    'bg-brand text-brand-ink hover:bg-brand-hover active:bg-brand-hover shadow-sm',
+    'bg-brand text-brand-ink shadow-brand hover:bg-brand-hover active:translate-y-px',
   secondary:
-    'bg-surface text-ink border border-rule-strong hover:bg-surface-sunk',
+    'bg-surface text-ink ring-1 ring-rule-strong shadow-sm hover:bg-surface-sunk active:translate-y-px',
   ghost: 'text-ink-soft hover:bg-surface-sunk hover:text-ink',
   danger: 'bg-danger text-white hover:opacity-90',
 }
@@ -63,7 +65,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex items-center justify-center rounded-[--radius] font-medium',
+        'inline-flex items-center justify-center rounded-xl font-medium',
         'transition-colors duration-150',
         'disabled:opacity-50 disabled:pointer-events-none',
         VARIANTS[variant],

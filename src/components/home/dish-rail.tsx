@@ -5,6 +5,7 @@ import { FoodMark } from '@/components/ui/food-mark'
 import { Pressable } from '@/components/ui/reveal'
 import { formatRupees } from '@/lib/format'
 import type { DishWithKitchen } from '@/lib/api/queries'
+import { SectionHeading } from '@/components/ui/section-heading'
 
 /**
  * A rail of actual dishes with actual prices.
@@ -28,7 +29,7 @@ export function DishRail({
 
   return (
     <div>
-      <h2 className="font-display text-xl font-bold text-ink">{title}</h2>
+      <SectionHeading eyebrow="Ordered most this week" title={title} />
 
       <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
         <ul className="flex gap-3">
@@ -37,12 +38,11 @@ export function DishRail({
               <Pressable>
                 <Link
                   href={`/kitchens/${kitchenId}`}
-                  className="group block overflow-hidden rounded-lg border border-rule bg-surface shadow-sm transition-shadow hover:shadow"
+                  className="group block overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-rule/70 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <DishImage
                     name={item.name}
                     src={item.image_url}
-                    foodType={item.food_type}
                     className="aspect-square w-full transition-transform duration-500 group-hover:scale-[1.04]"
                     sizes="168px"
                   />
