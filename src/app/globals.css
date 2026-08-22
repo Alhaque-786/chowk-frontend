@@ -1,26 +1,249 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   Chowk design tokens
+   ===========================================================================
+
+   Direction: a chowk is the market square — the public ground everyone trades
+   on. So the surface reads as warm paper rather than a dark app chrome, and the
+   brand colour is INDIGO: a pigment with genuine Indian provenance, and cool
+   enough to leave the warm end of the spectrum entirely to the food.
+
+   That separation is the load-bearing decision. Food photography and the
+   legally-required veg/non-veg marks are already red and green; a warm brand
+   colour would fight both. Indigo lets a green mark read as "veg" rather than as
+   decoration, which matters because in India that mark is regulated, not
+   stylistic.
+
+   Every colour is defined at :root, redefined for system-dark, and redefined
+   again for an explicit dark choice — so a component never reads a token that
+   has no value in the current state.
+   =========================================================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* --- Ground: warm paper, not white. A pure #FFF reads clinical next to food. */
+  --ground: #fbf9f5;
+  --surface: #ffffff;
+  --surface-sunk: #f3f0ea;
+  --surface-raised: #ffffff;
+
+  /* --- Ink: warm near-black. Pure black on warm paper looks like a printing error. */
+  --ink: #1c1a17;
+  --ink-soft: #55504a;
+  --ink-faint: #8b857c;
+  --ink-inverse: #fbf9f5;
+
+  --rule: #e5e0d6;
+  --rule-strong: #cbc4b6;
+
+  /* --- Brand: indigo. Used for actions and identity, never for food state. */
+  --brand: #2f3f7a;
+  --brand-hover: #263462;
+  --brand-soft: #eaecf6;
+  --brand-ink: #ffffff;
+
+  /* --- Semantic: SEPARATE from brand, because these encode regulated meaning.
+         The veg/non-veg mark is a legal labelling requirement in India. */
+  --veg: #0a7a3d;
+  --non-veg: #9b2c2c;
+  --egg: #b8860b;
+
+  /* --- State */
+  --success: #0a7a3d;
+  --warning: #a1620a;
+  --danger: #9b2c2c;
+  --danger-soft: #fdf0ee;
+
+  /* --- Accent: saffron, used sparingly for offers and highlights only.
+         One bold place; everything around it stays quiet. */
+  --accent: #c2681a;
+  --accent-soft: #fdf1e5;
+
+  --radius: 0.625rem;
+  --radius-sm: 0.375rem;
+  --radius-lg: 1rem;
+
+  --shadow-sm: 0 1px 2px rgb(28 26 23 / 0.05);
+  --shadow: 0 1px 3px rgb(28 26 23 / 0.07), 0 6px 16px -8px rgb(28 26 23 / 0.10);
+  --shadow-lg: 0 2px 6px rgb(28 26 23 / 0.08), 0 16px 32px -12px rgb(28 26 23 / 0.16);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* System dark — nothing stamped on the root. Guarded so an explicit light
+   choice still wins over a dark OS. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --ground: #14120f;
+    --surface: #1c1a17;
+    --surface-sunk: #100f0c;
+    --surface-raised: #24211d;
+
+    --ink: #f0ece4;
+    --ink-soft: #b0a99e;
+    --ink-faint: #7d766c;
+    --ink-inverse: #14120f;
+
+    --rule: #2e2b26;
+    --rule-strong: #443f38;
+
+    /* Indigo lifted so it clears a dark warm ground; the dark-on-dark version
+       of a brand colour is a different colour, not the same one dimmed. */
+    --brand: #8b9ddb;
+    --brand-hover: #a3b2e6;
+    --brand-soft: #22283f;
+    --brand-ink: #14120f;
+
+    --veg: #4caf72;
+    --non-veg: #e07b7b;
+    --egg: #d9a93c;
+
+    --success: #4caf72;
+    --warning: #d9a93c;
+    --danger: #e07b7b;
+    --danger-soft: #2b1d1d;
+
+    --accent: #e08a3c;
+    --accent-soft: #2c2015;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 6px 16px -8px rgb(0 0 0 / 0.6);
+    --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px -12px rgb(0 0 0 / 0.7);
   }
 }
 
+/* Explicit dark choice wins in the other direction too. */
+:root[data-theme="dark"] {
+  --ground: #14120f;
+  --surface: #1c1a17;
+  --surface-sunk: #100f0c;
+  --surface-raised: #24211d;
+
+  --ink: #f0ece4;
+  --ink-soft: #b0a99e;
+  --ink-faint: #7d766c;
+  --ink-inverse: #14120f;
+
+  --rule: #2e2b26;
+  --rule-strong: #443f38;
+
+  --brand: #8b9ddb;
+  --brand-hover: #a3b2e6;
+  --brand-soft: #22283f;
+  --brand-ink: #14120f;
+
+  --veg: #4caf72;
+  --non-veg: #e07b7b;
+  --egg: #d9a93c;
+
+  --success: #4caf72;
+  --warning: #d9a93c;
+  --danger: #e07b7b;
+  --danger-soft: #2b1d1d;
+
+  --accent: #e08a3c;
+  --accent-soft: #2c2015;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 3px rgb(0 0 0 / 0.5), 0 6px 16px -8px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px -12px rgb(0 0 0 / 0.7);
+}
+
+/* Tailwind v4 is CSS-first: @theme maps tokens onto utility names, so
+   `bg-surface` and `text-ink-soft` work without a JS config file. */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-inverse: var(--ink-inverse);
+
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+
+  --color-veg: var(--veg);
+  --color-non-veg: var(--non-veg);
+  --color-egg: var(--egg);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-DEFAULT: var(--radius);
+  --radius-sm: var(--radius-sm);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-DEFAULT: var(--shadow);
+  --shadow-lg: var(--shadow-lg);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+
+* {
+  border-color: var(--rule);
+}
+
+html {
+  /* Prevents iOS Safari inflating text in landscape, which breaks a menu grid. */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Food ordering is overwhelmingly mobile; nothing should scroll sideways. */
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* The non-veg mark is a triangle inside a square, per FSSAI labelling. Tailwind
+   has no clip-path utility, and an SVG per item would be heavier than one class
+   on a menu of fifty dishes. */
+.clip-triangle {
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* Prices, quantities and totals must line up in columns. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard focus must always be visible — a food order is a form-heavy flow and
+   plenty of people complete it without a mouse. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
