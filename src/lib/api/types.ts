@@ -141,8 +141,16 @@ export type MenuItem = {
 export type ModifierGroup = {
   id: string
   name: string
-  /** > 0 means the customer must choose. */
+  /**
+   * The server's own verdict on whether a choice is mandatory.
+   *
+   * Redundant with `min_select > 0` today, and preferred anyway: if the rule ever
+   * becomes more subtle than a count, the server is the one place that should
+   * decide. Derived booleans on the client are how two definitions drift.
+   */
+  is_required: boolean
   min_select: number
+  /** How many may be picked. 1 means a radio group, more means checkboxes. */
   max_select: number
   modifiers: Modifier[]
 }
@@ -150,8 +158,18 @@ export type ModifierGroup = {
 export type Modifier = {
   id: string
   name: string
+  /** Added to the item's base price. Zero is common — a portion choice where the
+   *  small size is the base price. */
   price_minor: Paise
-  is_available: boolean
+  /**
+   * NOT SENT by the API. Declared optional so nothing can guard on it and
+   * conclude every modifier is unavailable.
+   *
+   * It was previously declared required, which is the more dangerous mistake: a
+   * check like `m.is_available && …` reads undefined, and every add-on silently
+   * disappears from the sheet with no error anywhere.
+   */
+  is_available?: boolean
 }
 
 export type MenuCategory = {
@@ -233,10 +251,17 @@ export type NearbyKitchen = Kitchen & {
  * `PATCH /cart/items/undefined` — no TypeScript error, no runtime error at the
  * call site, just a 404 or a 400 from the server on every quantity change.
  *
- * `modifiers` and `note` are REQUEST fields, not response fields — the cart
- * response does not echo them back. They were declared here as optional response
- * fields, which is worse than omitting them: optional means "sometimes present",
- * so a reader would write code for a case that can never happen.
+ * CORRECTION to an earlier note in this file: the response DOES echo modifiers
+ * back, as an array of NAMES (not ids, not objects). Verified against the live
+ * API. An earlier version of this type dropped the field on the reasoning that it
+ * was request-only, which was simply wrong — and dropping it meant the cart could
+ * not show what a customer had chosen.
+ *
+ * `unit_price_minor` is the BASE price and EXCLUDES modifiers. `line_total_minor`
+ * includes them. So for a ₹389 biryani with a ₹140 "Full" portion at quantity 2,
+ * unit_price_minor is 38900 and line_total_minor is 105800 — and rendering
+ * "₹389 each" beside a ₹1,058 line total is how a customer concludes the maths
+ * is broken. Derive the effective unit price from the line total instead.
  */
 export type CartLine = {
   line_id: string
@@ -245,6 +270,12 @@ export type CartLine = {
   quantity: number
   unit_price_minor: Paise
   line_total_minor: Paise
+  /**
+   * The chosen modifiers, as display NAMES — "Full (serves 2)", "Extra raita".
+   * Names, not ids, so they can be shown without a second lookup; the trade is
+   * that they cannot be mapped back to modifier ids for editing.
+   */
+  modifiers?: string[]
   /** False when the dish sold out after it went in the cart. */
   is_available: boolean
 }

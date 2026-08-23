@@ -149,8 +149,7 @@ export default async function KitchenMenuPage({ params }: PageProps) {
                         action={
                           <AddToCart
                             kitchenId={kitchenId}
-                            itemId={item.id}
-                            itemName={item.name}
+                            item={item}
                             // A closed kitchen disables every add rather than
                             // failing at checkout. The reason is the kitchen's,
                             // not the dish's, so it is stated once here.

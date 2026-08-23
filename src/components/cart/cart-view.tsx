@@ -230,8 +230,24 @@ export function CartView() {
                 <p className="font-display text-[1.0625rem] font-semibold leading-snug text-ink">
                   {line.name}
                 </p>
+
+                {/* What they actually chose. Without this the customer cannot
+                    tell a half portion from a full one in their own cart. */}
+                {line.modifiers && line.modifiers.length > 0 && (
+                  <p className="mt-0.5 text-xs leading-snug text-ink-soft">
+                    {line.modifiers.join(' · ')}
+                  </p>
+                )}
+
+                {/*
+                  Derived from the LINE TOTAL, not from `unit_price_minor`.
+                  unit_price_minor is the base price and excludes modifiers, so
+                  showing it reads as "₹389 each" beside a ₹1,058 line total and
+                  makes the arithmetic look broken. This is the number the
+                  customer is actually paying per item.
+                */}
                 <p className="tabular mt-0.5 text-sm text-ink-soft">
-                  {formatRupees(line.unit_price_minor)} each
+                  {formatRupees(Math.round(line.line_total_minor / line.quantity))} each
                 </p>
                 {!line.is_available && (
                   <p className="mt-1 text-xs font-medium text-danger">Sold out</p>
