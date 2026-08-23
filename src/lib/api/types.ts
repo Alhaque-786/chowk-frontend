@@ -146,6 +146,12 @@ export type Kitchen = {
   slug: string
   description?: string
   cuisines: string[]
+  /**
+   * Listing card photograph. ABSENT when the kitchen has none — the API omits
+   * the key rather than sending '', so this is optional and no component may
+   * assume a kitchen has a picture.
+   */
+  cover_image_url?: string
   city: string
   latitude: number
   longitude: number
@@ -272,6 +278,14 @@ export type Offer = {
   min_order_minor: Paise
   first_order_only: boolean
   valid_until?: string
+  /**
+   * Which kitchens the offer applies to. EMPTY means every kitchen — a
+   * platform-wide offer.
+   *
+   * The distinction matters at the call site: `[]` is "applies everywhere", not
+   * "applies nowhere", and reading it the other way hides every global offer.
+   */
+  kitchen_ids: string[]
 }
 
 export type CouponCheck = {

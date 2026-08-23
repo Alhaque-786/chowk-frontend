@@ -11,8 +11,9 @@ import { DishImage } from '@/components/ui/dish-image'
  * way: a small composed group, tilted in a shared 3D scene, where the interest
  * comes from depth and arrangement rather than from image content. It is the one
  * treatment that looks deliberate while the photography is still missing, and it
- * swaps straight over -- DishImage already prefers `src` when a dish has one, so
- * these become real photographs the moment the menu carries them.
+ * Now showing real photographs rather than gradient tiles, since the catalogue
+ * carries images. Still hardcoded rather than fetched: this is hero ART, and it
+ * must paint with the static shell for LCP instead of waiting on a query.
  *
  * Decorative as a whole: the cards repeat what the kitchen list below states in
  * text, so the group is hidden from assistive tech rather than read out twice.
@@ -24,6 +25,7 @@ const CARDS = [
   {
     name: 'Lucknawi Mutton Biryani',
     kitchen: 'Khansama',
+    photo: '/dishes/mutton-biryani.jpg',
     price: '₹320',
     rating: '4.7',
     mins: '28',
@@ -37,6 +39,7 @@ const CARDS = [
   {
     name: 'Galouti Kebab Platter',
     kitchen: 'Khansama',
+    photo: '/dishes/seekh-kebab.jpg',
     price: '₹240',
     rating: '4.8',
     mins: '22',
@@ -48,6 +51,7 @@ const CARDS = [
   {
     name: 'Shahi Paneer Thali',
     kitchen: 'Khansama',
+    photo: '/dishes/paneer-tikka.jpg',
     price: '₹190',
     rating: '4.6',
     mins: '25',
@@ -75,8 +79,12 @@ export function HeroStack() {
           >
             <DishImage
               name={card.name}
+              src={card.photo}
               className="aspect-[4/3] w-full rounded-2xl"
               sizes="240px"
+              // The hero is above the fold on every desktop view, so these are
+              // the LCP candidates and must not wait on an intersection observer.
+              priority
             />
             <div className="px-2 pb-1 pt-2.5">
               <p className="truncate font-display text-sm font-bold leading-tight text-ink">

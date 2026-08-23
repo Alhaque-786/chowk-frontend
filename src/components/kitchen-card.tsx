@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { Clock, Star } from 'lucide-react'
+import { Clock, Star, Tag } from 'lucide-react'
 import { DishImage } from '@/components/ui/dish-image'
 import { Pressable } from '@/components/ui/reveal'
 import { formatDistance, formatRupees } from '@/lib/format'
+import { offerHeadline } from '@/lib/offer-index'
 import { cn } from '@/lib/cn'
-import type { NearbyKitchen } from '@/lib/api/types'
+import type { NearbyKitchen, Offer } from '@/lib/api/types'
 
 /**
  * A kitchen in a list.
@@ -18,9 +19,13 @@ import type { NearbyKitchen } from '@/lib/api/types'
  */
 export function KitchenCard({
   kitchen,
+  offer,
   priority = false,
 }: {
   kitchen: NearbyKitchen
+  /** The offer to advertise on the image, if any. Resolved by the page, not
+   *  here, so the empty-means-everywhere rule lives in exactly one place. */
+  offer?: Offer
   /** Set on the first card or two, so the LCP image is not lazy-loaded. */
   priority?: boolean
 }) {
@@ -40,6 +45,7 @@ export function KitchenCard({
           <div className="relative aspect-[16/10] w-full">
             <DishImage
               name={kitchen.name}
+              src={kitchen.cover_image_url}
               className="absolute inset-0 size-full transition-transform duration-500 group-hover:scale-[1.03]"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
               priority={priority}
@@ -55,7 +61,26 @@ export function KitchenCard({
               </div>
             )}
 
-            {kitchen.min_order_minor > 0 && is_open && (
+            {/*
+              The offer strip. Full width across the bottom of the image rather
+              than a corner pill, which is what makes a grid of these read as a
+              deals page instead of a directory -- it is the one element every
+              reference design leads with.
+
+              Brand ink on a light scrim, NOT white text straight on the photo: a
+              photograph has no guaranteed contrast, and "50% OFF" is exactly the
+              text that must never become unreadable over a pale plate of rice.
+            */}
+            {offer && is_open && (
+              <div className="absolute inset-x-0 bottom-0 flex items-center gap-1.5 bg-brand/92 px-3 py-1.5 backdrop-blur-sm">
+                <Tag className="size-3 shrink-0 text-brand-ink" />
+                <span className="truncate text-xs font-bold uppercase tracking-wide text-brand-ink">
+                  {offerHeadline(offer)}
+                </span>
+              </div>
+            )}
+
+            {kitchen.min_order_minor > 0 && is_open && !offer && (
               <span className="absolute bottom-2 left-2 rounded-md bg-surface/95 px-2 py-1 text-[0.6875rem] font-semibold text-ink backdrop-blur-sm tabular">
                 Min {formatRupees(kitchen.min_order_minor)}
               </span>

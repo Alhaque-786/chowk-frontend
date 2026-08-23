@@ -10,10 +10,33 @@ import { Logo } from './logo'
  * that would otherwise be orphaned. Both are real reasons; a footer full of
  * decorative links is just weight.
  */
+/**
+ * Long-tail search terms worth an internal link.
+ *
+ * Curated, not generated from live data: these are NAVIGATION and have to be
+ * stable enough for a crawler to keep finding at the same URL. A list derived
+ * from whatever is currently on the menu would reshuffle between deploys, which
+ * is the opposite of what internal linking is for.
+ */
+const POPULAR_SEARCHES = [
+  'Biryani near me',
+  'Late night food',
+  'Pure veg kitchens',
+  'Awadhi food',
+  'Kebabs',
+  'Thali',
+  'Paratha',
+  'Chinese',
+  'Desserts',
+  'Cheap eats under ₹150',
+  'Family packs',
+  'Breakfast',
+] as const
+
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-rule bg-surface">
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <Link href="/" className="flex items-center gap-2" aria-label="Chowk home">
@@ -53,11 +76,48 @@ export function SiteFooter() {
               { label: 'Privacy policy', href: '/legal/privacy' },
               { label: 'Refund policy', href: '/legal/refunds' },
               { label: 'Contact support', href: '/support' },
+              // Required, not decorative: the site's photography is CC BY / CC
+              // BY-SA, and both licences oblige us to credit the author and
+              // name the licence wherever the work appears. An unreachable
+              // credits page does not discharge that.
+              { label: 'Photo credits', href: '/attributions' },
             ]}
           />
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-rule pt-6 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
+        {/*
+          Internal links for the long tail. Both reference sites (Zomato, Swiggy)
+          carry a block like this, and not for decoration: a dish or cuisine page
+          has no other inbound link, so without this it is orphaned and never
+          indexed. "Biryani near me" is a real query with real volume, and this
+          row is what makes the corresponding page discoverable.
+
+          Deliberately a flat list of chips rather than four more columns -- it is
+          navigation for crawlers and the occasional browser, and giving it the
+          same visual weight as the compliance links would misrepresent both.
+        */}
+        <nav aria-labelledby="footer-popular" className="mt-10 border-t border-rule pt-6">
+          <h2
+            id="footer-popular"
+            className="font-display text-xs font-semibold uppercase tracking-wider text-ink-faint"
+          >
+            Popular near you
+          </h2>
+          <ul className="mt-3 flex flex-wrap gap-x-2 gap-y-1.5">
+            {POPULAR_SEARCHES.map((term) => (
+              <li key={term}>
+                <Link
+                  href={`/search?q=${encodeURIComponent(term)}`}
+                  className="inline-block rounded-full bg-surface-sunk px-2.5 py-1 text-xs text-ink-soft transition-colors hover:text-brand"
+                >
+                  {term}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div className="mt-8 flex flex-col gap-3 border-t border-rule pt-6 text-xs text-ink-faint sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Chowk. All rights reserved.</p>
           {/*
             FSSAI licence display is mandatory for a food business operator in

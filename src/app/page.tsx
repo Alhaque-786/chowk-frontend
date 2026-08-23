@@ -257,7 +257,13 @@ async function PopularDishes() {
 
 async function Kitchens() {
   const location = await getDeliveryLocation()
-  const kitchens = await CatalogService.findNearby(location.lat, location.lng)
+  // Both are React-`cache`d, so the offers call is shared with the Offers
+  // section above and the kitchens call with PopularDishes -- one request each
+  // per render despite three consumers.
+  const [kitchens, offers] = await Promise.all([
+    CatalogService.findNearby(location.lat, location.lng),
+    PromotionService.listOffers(),
+  ])
 
   return (
     <Reveal>
@@ -268,7 +274,7 @@ async function Kitchens() {
         action={kitchens.length > 3 ? { href: '/kitchens', label: 'See all' } : undefined}
       />
       <div className="mt-5">
-        <KitchenList kitchens={kitchens} />
+        <KitchenList kitchens={kitchens} offers={offers} />
       </div>
     </Reveal>
   )

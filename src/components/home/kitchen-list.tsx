@@ -3,9 +3,10 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { KitchenCard } from '@/components/kitchen-card'
+import { buildOfferIndex } from '@/lib/offer-index'
 import { Button } from '@/components/ui/button'
 import { FilterChips, type Filter } from './filter-chips'
-import type { NearbyKitchen } from '@/lib/api/types'
+import type { NearbyKitchen, Offer } from '@/lib/api/types'
 
 /**
  * The kitchen list with its filters.
@@ -16,8 +17,20 @@ import type { NearbyKitchen } from '@/lib/api/types'
  * hide every kitchen from search engines, which for a marketplace is the whole
  * SEO story.
  */
-export function KitchenList({ kitchens }: { kitchens: NearbyKitchen[] }) {
+export function KitchenList({
+  kitchens,
+  offers = [],
+}: {
+  kitchens: NearbyKitchen[]
+  /** Live offers, so each card can advertise the one that applies to it. */
+  offers?: Offer[]
+}) {
   const [filters, setFilters] = useState<Set<Filter>>(new Set())
+
+  // Indexed once per offers change, not per card render: filtering inside the
+  // card would be O(kitchens x offers) and would scatter the
+  // empty-means-everywhere rule across call sites.
+  const offerIndex = useMemo(() => buildOfferIndex(offers), [offers])
 
   const visible = useMemo(() => {
     let list = kitchens
@@ -64,6 +77,7 @@ export function KitchenList({ kitchens }: { kitchens: NearbyKitchen[] }) {
             <KitchenCard
               key={kitchen.id}
               kitchen={kitchen}
+              offer={offerIndex.for(kitchen.id)}
               // The first two are above the fold on most phones, so they load
               // eagerly rather than waiting for the intersection observer.
               priority={i < 2}

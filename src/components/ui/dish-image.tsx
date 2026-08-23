@@ -11,9 +11,11 @@ import { cn } from '@/lib/cn'
  * gradient deterministically from the dish name, so the same dish always looks
  * the same and a menu reads as a designed set rather than random noise.
  *
- * This is a stand-in, not a solution. Real dish photography is the single
- * highest-impact thing that can be added to this UI, and no amount of CSS
- * substitutes for it.
+ * The photograph path is now the normal one -- menu_items.image_url and
+ * kitchens.cover_image_url are both populated -- so the gradient is the exception
+ * rather than the rule. It stays because it must: a drink with no photo, a newly
+ * added dish, and a kitchen that has not uploaded a cover all still need to
+ * render as something designed.
  */
 
 /** Warm, food-adjacent gradient pairs. Deliberately none of them grey. */

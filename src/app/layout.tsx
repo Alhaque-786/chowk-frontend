@@ -1,3 +1,4 @@
+import { RevealNoScriptFallback } from '@/components/ui/reveal'
 import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Hanken_Grotesk } from 'next/font/google'
 import { CartBar } from '@/components/layout/cart-bar'
@@ -98,6 +99,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${bricolage.variable} ${hanken.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
+        {/* Must precede any Reveal: with JS off, those sections ship invisible. */}
+        <RevealNoScriptFallback />
         {/*
           A skip link is the first focusable element on every page. Without it,
           a keyboard user tabs through the entire header and nav on every

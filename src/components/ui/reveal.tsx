@@ -14,7 +14,33 @@ import { motion, useReducedMotion } from 'motion/react'
  * because these transforms are driven by JS and would otherwise ignore the
  * preference entirely. For someone with vestibular sensitivity, that is the
  * difference between usable and not.
+ *
+ * NO-JS SAFETY. The server renders `initial`, so the markup ships as
+ * `opacity: 0` and only becomes visible once motion hydrates and the viewport
+ * observer fires. With JavaScript unavailable or broken, five sections of the
+ * home page were permanently invisible -- present in the DOM, readable by a
+ * crawler, and blank to a person. The `<noscript>` rule below forces them back
+ * to visible, which is three lines and cannot regress: if JS runs, the element
+ * is never affected; if it does not, the animation was never going to happen
+ * anyway.
  */
+
+/**
+ * Rendered ONCE, not per Reveal. A style tag inside the component would emit one
+ * copy per instance -- five on the home page today, more later.
+ *
+ * Lives in the layout so it is present before any Reveal renders. `!important`
+ * because it is overriding an inline style, which nothing else can outrank.
+ */
+export function RevealNoScriptFallback() {
+  return (
+    <noscript>
+      <style>{`
+        [data-reveal] { opacity: 1 !important; transform: none !important; }
+      `}</style>
+    </noscript>
+  )
+}
 export function Reveal({
   children,
   delay = 0,
@@ -32,6 +58,8 @@ export function Reveal({
   return (
     <motion.div
       className={className}
+      // Hook for the no-script fallback above.
+      data-reveal=""
       initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       // `once` so scrolling back up does not replay it, which reads as a glitch.

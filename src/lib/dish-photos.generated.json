@@ -1,0 +1,202 @@
+{
+  "mutton-biryani": {
+    "file": "/dishes/mutton-biryani.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ACombo%20lunch%20plate%20mix%20with%20Biriyani%2C%20prawn%20%26%20paneer.jpg",
+    "width": 900,
+    "height": 506,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Camellia singha roy",
+    "credit": "Own work"
+  },
+  "chicken-biryani": {
+    "file": "/dishes/chicken-biryani.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AChicken%20biryani%2002-06-2015%20(India).jpg",
+    "width": 900,
+    "height": 539,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Shivani shipra",
+    "credit": "Own work"
+  },
+  "butter-chicken": {
+    "file": "/dishes/butter-chicken.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AChicken%20makhani.jpg",
+    "width": 900,
+    "height": 598,
+    "licence": "CC BY-SA 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "author": "stu_spivack",
+    "credit": "Flickr"
+  },
+  "paneer-tikka": {
+    "file": "/dishes/paneer-tikka.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3APaneer%20Tikka%20in%20India.jpg",
+    "width": 900,
+    "height": 299,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Rutvi Mistry",
+    "credit": "Own work"
+  },
+  "seekh-kebab": {
+    "file": "/dishes/seekh-kebab.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AButter%20Chicken%2C%20Beef%20Vindaloo%20Lunch%20Thali%20-%20Spice%20Kitchen%20AUD9.90%20(3694113488).jpg",
+    "width": 900,
+    "height": 602,
+    "licence": "CC BY-SA 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "author": "Alpha from Melbourne, Australia",
+    "credit": "Butter Chicken, Beef Vindaloo Lunch Thali - Spice Kitchen AUD9.90"
+  },
+  "tandoori-platter": {
+    "file": "/dishes/tandoori-platter.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ATandoori%20Platter%20AUD25.90%20-%20Bombay%20Beat%20(3752394918).jpg",
+    "width": 900,
+    "height": 602,
+    "licence": "CC BY-SA 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "author": "Alpha from Melbourne, Australia",
+    "credit": "Tandoori Platter AUD25.90 - Bombay Beat"
+  },
+  "dal-makhani": {
+    "file": "/dishes/dal-makhani.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ADal%20Makhani..JPG",
+    "width": 900,
+    "height": 675,
+    "licence": "CC0",
+    "licenceUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "author": "Miansari66",
+    "credit": "Own work"
+  },
+  "chole-bhature": {
+    "file": "/dishes/chole-bhature.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AChole%20Bhature%202.jpg",
+    "width": 900,
+    "height": 674,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Gannu03",
+    "credit": "Own work"
+  },
+  "thali": {
+    "file": "/dishes/thali.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3A'9'%20A%20Thali%2C%20meal%20served%20in%20India.jpg",
+    "width": 900,
+    "height": 600,
+    "licence": "CC BY 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
+    "author": "Johan Bichel Lindegaard",
+    "credit": "Flickr: Thali"
+  },
+  "dosa": {
+    "file": "/dishes/dosa.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMasala%20dosa%2001.jpg",
+    "width": 900,
+    "height": 554,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Marajozkee",
+    "credit": "Own work"
+  },
+  "naan": {
+    "file": "/dishes/naan.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ANaan%20baked%20in%20Tandoor.jpg",
+    "width": 900,
+    "height": 675,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Ravi Dwivedi",
+    "credit": "Own work"
+  },
+  "rogan-josh": {
+    "file": "/dishes/rogan-josh.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMutton%20Rogan%20Josh%20curry.jpg",
+    "width": 900,
+    "height": 600,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Kajori.p",
+    "credit": "Own work"
+  },
+  "samosa": {
+    "file": "/dishes/samosa.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ASamosa%20Chat.jpg",
+    "width": 900,
+    "height": 407,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Darshandkt",
+    "credit": "Own work"
+  },
+  "gulab-jamun": {
+    "file": "/dishes/gulab-jamun.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AGulab%20jamun%20(Gibraltar%2C%20November%202020).jpg",
+    "width": 900,
+    "height": 506,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Cabeza2000",
+    "credit": "Own work"
+  },
+  "kheer": {
+    "file": "/dishes/kheer.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AKheer%20Special.JPG",
+    "width": 900,
+    "height": 598,
+    "licence": "Public domain",
+    "licenceUrl": "",
+    "author": "Miansari66",
+    "credit": "Own work"
+  },
+  "cover-mughlai": {
+    "file": "/dishes/cover-mughlai.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3APatvelia9-Bhatia%20Residence%2CMumbai-Maharashtra.jpg",
+    "width": 900,
+    "height": 527,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "CHEFTB2",
+    "credit": "Own work"
+  },
+  "cover-tandoor": {
+    "file": "/dishes/cover-tandoor.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AChicken%20Tandoori%2C%20Arsalan%20Restaurant%2C%20Kolkata.jpg",
+    "width": 900,
+    "height": 506,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Rakhshanda Mujib",
+    "credit": "Own work"
+  },
+  "cover-southindian": {
+    "file": "/dishes/cover-southindian.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMeal%20BananaLeaf.JPG",
+    "width": 900,
+    "height": 598,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Jpatokal",
+    "credit": "Own work"
+  },
+  "cover-streetfood": {
+    "file": "/dishes/cover-streetfood.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AIndia%20-%20Varanasi%20green%20peas%20-%202714.jpg",
+    "width": 900,
+    "height": 600,
+    "licence": "CC BY-SA 3.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "author": "Jorge Royan",
+    "credit": "Own work"
+  },
+  "cover-sweets": {
+    "file": "/dishes/cover-sweets.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ASweets%20Mithai%20for%20Diwali%20and%20other%20Festivals%20of%20India.jpg",
+    "width": 900,
+    "height": 675,
+    "licence": "CC BY-SA 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "author": "Laura",
+    "credit": "Flickr: Indian Sweet shop"
+  }
+}
