@@ -11,8 +11,11 @@ import { HeroStack } from '@/components/home/hero-stack'
 import { OffersRail } from '@/components/home/offers-rail'
 import { KitchenList } from '@/components/home/kitchen-list'
 import { DishRail } from '@/components/home/dish-rail'
-import { getNearbyKitchens, getOffers, getPopularDishes } from '@/lib/api/queries'
+import CatalogService from '@/services/CatalogService'
+import PromotionService from '@/services/PromotionService'
 import { SectionHeading } from '@/components/ui/section-heading'
+import { SERVING_AREAS } from '@/lib/serving-areas'
+import { getDeliveryLocation } from '@/lib/location'
 import { jsonLdScript, organizationJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 
@@ -30,14 +33,17 @@ export const metadata: Metadata = {
 }
 
 /**
- * Serving area, hardcoded while there is one city.
+ * How the hero describes our coverage.
  *
- * Called out rather than buried: real behaviour reads the customer's saved
- * address or asks for geolocation, and this placeholder should not quietly become
- * the permanent answer.
+ * Derived from SERVING_AREAS rather than written out, so launching a second city
+ * is a config edit and not a hunt through JSX for the word "Lucknow". Static on
+ * purpose: this line describes where the BUSINESS operates, which is the same for
+ * every visitor, unlike the delivery location below it.
  */
-const CITY = 'Lucknow'
-const CENTRE = { lat: 26.85, lng: 80.947 }
+const COVERAGE =
+  SERVING_AREAS.length === 1
+    ? `Now delivering in ${SERVING_AREAS[0].city}`
+    : `Now delivering in ${SERVING_AREAS.length} cities`
 
 export default function HomePage() {
   return (
@@ -49,9 +55,17 @@ export default function HomePage() {
 
       {/* --- Location and search, above everything, because they decide whether
               anything below is relevant. --- */}
+      {/*
+        Suspense around the location bar specifically because reading the location
+        cookie is what makes this route dynamic. Isolating it here means the hero
+        below still streams as part of the static shell, so the LCP element does
+        not wait on a request-time read.
+      */}
       <section className="border-b border-rule bg-surface">
         <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
-          <LocationBar city={CITY} />
+          <Suspense fallback={<LocationBarSkeleton />}>
+            <ActiveLocationBar />
+          </Suspense>
         </div>
       </section>
 
@@ -126,7 +140,7 @@ function Hero() {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-veg opacity-70" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-veg" />
               </span>
-              Now delivering in {CITY}
+              {COVERAGE}
             </span>
 
             {/*
@@ -213,7 +227,7 @@ function Hero() {
 }
 
 async function Offers() {
-  const offers = await getOffers()
+  const offers = await PromotionService.listOffers()
   if (offers.length === 0) return null
   return (
     <Reveal>
@@ -227,25 +241,29 @@ async function Offers() {
  * into something you can decide dinner from.
  */
 async function PopularDishes() {
-  const kitchens = await getNearbyKitchens(CENTRE.lat, CENTRE.lng)
-  const dishes = await getPopularDishes(kitchens)
+  const location = await getDeliveryLocation()
+  // Reuses the same request as Kitchens below: findNearby is React-`cache`d, so
+  // identical arguments in one render execute once.
+  const kitchens = await CatalogService.findNearby(location.lat, location.lng)
+  const dishes = await CatalogService.getPopularDishes(kitchens)
   if (dishes.length === 0) return null
 
   return (
     <Reveal>
-      <DishRail dishes={dishes} title={`Popular in ${CITY}`} />
+      <DishRail dishes={dishes} title={`Popular near ${location.label}`} />
     </Reveal>
   )
 }
 
 async function Kitchens() {
-  const kitchens = await getNearbyKitchens(CENTRE.lat, CENTRE.lng)
+  const location = await getDeliveryLocation()
+  const kitchens = await CatalogService.findNearby(location.lat, location.lng)
 
   return (
     <Reveal>
       <SectionHeading
         eyebrow={`${kitchens.length} cooking near you`}
-        title={`Kitchens in ${CITY}`}
+        title={`Kitchens near ${location.label}`}
         // Only offered when there is actually more to see than the list shows.
         action={kitchens.length > 3 ? { href: '/kitchens', label: 'See all' } : undefined}
       />
@@ -343,6 +361,35 @@ function ListSkeleton() {
           <Skeleton key={i} className="h-64 rounded-lg" />
         ))}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Resolves the delivery location on the server and hands it to the client picker.
+ *
+ * The split matters: the COOKIE READ is server-side, so the first paint already
+ * shows the right place with no flash of a wrong city, while the picker itself
+ * needs to be a client component for the geolocation prompt and the sheet. This
+ * component is the seam between the two.
+ */
+async function ActiveLocationBar() {
+  const location = await getDeliveryLocation()
+  return <LocationBar label={location.label} isFallback={location.isFallback} />
+}
+
+/** Matches the location bar's height, so nothing below it shifts when it lands. */
+function LocationBarSkeleton() {
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="size-4 rounded-full" />
+        <div>
+          <Skeleton className="h-2.5 w-16" />
+          <Skeleton className="mt-1.5 h-4 w-28" />
+        </div>
+      </div>
+      <Skeleton className="mt-3 h-11 w-full rounded-xl" />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { KitchenHeader } from '@/components/menu/kitchen-header'
 import { MenuItemCard } from '@/components/menu/menu-item-card'
-import { getMenu } from '@/lib/api/queries'
+import CatalogService from '@/services/CatalogService'
 import {
   breadcrumbJsonLd,
   jsonLdScript,
@@ -18,7 +18,7 @@ type PageProps = { params: Promise<{ kitchenId: string }> }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { kitchenId } = await params
-  const menu = await getMenu(kitchenId)
+  const menu = await CatalogService.getMenu(kitchenId)
   if (!menu) return { title: 'Kitchen not found' }
 
   const cuisines = menu.kitchen.cuisines.join(', ')
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function KitchenMenuPage({ params }: PageProps) {
   const { kitchenId } = await params
-  const menu = await getMenu(kitchenId)
+  const menu = await CatalogService.getMenu(kitchenId)
 
   if (!menu) notFound()
 

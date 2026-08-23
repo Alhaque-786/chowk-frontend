@@ -4,7 +4,7 @@ import { DishImage } from '@/components/ui/dish-image'
 import { FoodMark } from '@/components/ui/food-mark'
 import { Pressable } from '@/components/ui/reveal'
 import { formatRupees } from '@/lib/format'
-import type { DishWithKitchen } from '@/lib/api/queries'
+import type { DishWithKitchen } from '@/services/CatalogService'
 import { SectionHeading } from '@/components/ui/section-heading'
 
 /**
