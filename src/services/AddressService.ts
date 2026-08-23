@@ -42,8 +42,21 @@ const AddressService = {
   update: async (addressId: string, patch: Partial<Address>): Promise<Address> =>
     api.patch<Address>(`/addresses/${addressId}`, patch),
 
-  remove: async (addressId: string): Promise<void> => {
-    await api.delete(`/addresses/${addressId}`)
+  /**
+   * Removes an address from the customer's list.
+   *
+   * SOFT on the server: the row is deactivated, never deleted, because orders
+   * carry `delivery_address_id` and past deliveries should stay explainable. The
+   * name stays `remove` rather than `deactivate` because that is what it means to
+   * the person tapping it — the API's storage decision is not the caller's
+   * concern, and every read already excludes removed addresses.
+   *
+   * Not retried automatically: a DELETE is idempotent so a retry is safe, but a
+   * customer who taps remove wants to know immediately if it did not work rather
+   * than waiting through three attempts.
+   */
+  remove: async (addressId: string, options?: CallOptions): Promise<void> => {
+    await api.delete(`/addresses/${addressId}`, { retry: false, ...options })
   },
 }
 
