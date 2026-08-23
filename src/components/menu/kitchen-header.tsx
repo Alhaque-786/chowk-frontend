@@ -1,11 +1,42 @@
 import { Badge } from '@/components/ui/badge'
+import { DishImage } from '@/components/ui/dish-image'
 import { formatEta, formatRupees } from '@/lib/format'
 import type { Kitchen } from '@/lib/api/types'
 
+/**
+ * The kitchen's header.
+ *
+ * Leads with the cover photograph, because arriving here from a grid of
+ * photographs and being met by text reads as a different, worse site. The band
+ * is deliberately short -- 12rem, not a full-height hero -- since the customer
+ * came here to read a MENU, and a tall banner just pushes the food below the
+ * fold. It is the same reasoning that removed the home page's hero.
+ */
 export function KitchenHeader({ kitchen }: { kitchen: Kitchen }) {
   return (
-    <header className="border-b border-rule bg-surface px-4 py-5 sm:px-6">
-      <div className="mx-auto max-w-2xl">
+    <header className="border-b border-rule bg-surface">
+      {/* Only when there is a photograph. An empty band would be worse than
+          none, and DishImage's generated tile is for small slots, not a
+          full-bleed banner. */}
+      {kitchen.cover_image_url && (
+        <div className="relative h-40 w-full overflow-hidden sm:h-48">
+          <DishImage
+            name={kitchen.name}
+            src={kitchen.cover_image_url}
+            className="absolute inset-0 size-full"
+            sizes="100vw"
+            priority
+          />
+          {/* A scrim, so the band reads as a header rather than a loose image,
+              and so the rule below it does not float on a busy photograph. */}
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent"
+            aria-hidden="true"
+          />
+        </div>
+      )}
+
+      <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="font-display text-2xl font-extrabold leading-tight text-ink">

@@ -2,6 +2,7 @@ import { RevealNoScriptFallback } from '@/components/ui/reveal'
 import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Hanken_Grotesk } from 'next/font/google'
 import { CartBar } from '@/components/layout/cart-bar'
+import { AuthSheet } from '@/components/auth/auth-sheet'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { SiteHeader } from '@/components/layout/site-header'
 import { SITE_NAME, SITE_URL } from '@/lib/seo'
@@ -121,6 +122,10 @@ export default function RootLayout({
         {/* Global: once something is in the cart, checkout must be reachable
             from any page without hunting for the header. */}
         <CartBar />
+        {/* One instance for the whole app. Anything can call requireAuth() and
+            this is what answers — see lib/auth-gate for why it is not a provider
+            and not one sheet per button. */}
+        <AuthSheet />
       </body>
     </html>
   )

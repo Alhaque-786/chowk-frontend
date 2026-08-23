@@ -1,5 +1,6 @@
 import { cache } from 'react'
-import { ApiError, request } from '@/lib/api/client'
+import { api, type CallOptions } from '@/lib/api/client'
+import { ApiError } from '@/lib/api/errors'
 import type { Kitchen, Menu, MenuItem, NearbyKitchen } from '@/lib/api/types'
 
 /**
@@ -8,6 +9,11 @@ import type { Kitchen, Menu, MenuItem, NearbyKitchen } from '@/lib/api/types'
  * Every method here is a public read: no auth, and safe to call for an anonymous
  * visitor. That is why they are `cache`-wrapped and carry `revalidate` values;
  * these are the hottest and most cacheable calls in the product.
+ *
+ * Each method sets its own `revalidate` and then spreads `options` after it, so
+ * the default is right without thinking and a caller can still override — an
+ * admin screen wanting fresh data passes `{ revalidate: 0 }`, a build step wanting
+ * patience passes `{ retry: 5 }`. Defaults first, caller last.
  */
 
 /** A dish plus the kitchen it belongs to, for cross-kitchen rails. */
@@ -26,15 +32,20 @@ const CatalogService = {
    * anyone sees.
    */
   findNearby: cache(
-    async (lat: number, lng: number, radiusM = 10000): Promise<NearbyKitchen[]> => {
+    async (
+      lat: number,
+      lng: number,
+      radiusM = 10000,
+      options?: CallOptions,
+    ): Promise<NearbyKitchen[]> => {
       try {
-        const result = await request<{ kitchens: NearbyKitchen[] }>(
+        const result = await api.get<{ kitchens: NearbyKitchen[] }>(
           // `/kitchens/nearby`, not `/kitchens?lat=`. The first version used the
           // wrong path, got a 404, and the catch below turned it into an empty
           // list -- so a broken call rendered as a plausible "nothing nearby".
           // Verified against the running API.
           `/kitchens/nearby?lat=${lat}&lng=${lng}&radius_m=${radiusM}`,
-          { auth: false, revalidate: 120 },
+          { auth: false, revalidate: 120, ...options },
         )
         return result.kitchens ?? []
       } catch (err) {
@@ -56,11 +67,12 @@ const CatalogService = {
   ),
 
   /** One kitchen. Null on 404 so the caller can render notFound(). */
-  getKitchen: cache(async (kitchenId: string): Promise<Kitchen | null> => {
+  getKitchen: cache(async (kitchenId: string, options?: CallOptions): Promise<Kitchen | null> => {
     try {
-      return await request<Kitchen>(`/kitchens/${kitchenId}`, {
+      return await api.get<Kitchen>(`/kitchens/${kitchenId}`, {
         auth: false,
         revalidate: 120,
+        ...options,
       })
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) return null
@@ -69,14 +81,15 @@ const CatalogService = {
   }),
 
   /** Menu for one kitchen. Null on 404 so the caller can render notFound(). */
-  getMenu: cache(async (kitchenId: string): Promise<Menu | null> => {
+  getMenu: cache(async (kitchenId: string, options?: CallOptions): Promise<Menu | null> => {
     try {
-      return await request<Menu>(`/kitchens/${kitchenId}/menu`, {
+      return await api.get<Menu>(`/kitchens/${kitchenId}/menu`, {
         auth: false,
         // The hottest read in the system, and it changes rarely. 60s is short
         // enough that a price change surfaces quickly; the backend also
         // invalidates its own cache on write, so this is the outer layer.
         revalidate: 60,
+        ...options,
       })
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) return null
@@ -92,7 +105,7 @@ const CatalogService = {
     async (kitchenId: string, query: string): Promise<MenuItem[]> => {
       if (query.trim() === '') return []
       try {
-        const result = await request<{ items: MenuItem[] }>(
+        const result = await api.get<{ items: MenuItem[] }>(
           `/kitchens/${kitchenId}/search?q=${encodeURIComponent(query)}`,
           { auth: false, revalidate: 60 },
         )

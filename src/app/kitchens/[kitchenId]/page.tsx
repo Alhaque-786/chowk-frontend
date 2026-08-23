@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { KitchenHeader } from '@/components/menu/kitchen-header'
 import { MenuItemCard } from '@/components/menu/menu-item-card'
+import { AddToCart } from '@/components/menu/add-to-cart'
 import CatalogService from '@/services/CatalogService'
 import {
   breadcrumbJsonLd,
@@ -76,29 +77,94 @@ export default async function KitchenMenuPage({ params }: PageProps) {
 
       <KitchenHeader kitchen={menu.kitchen} />
 
-      <div className="mx-auto max-w-2xl px-4 sm:px-6">
+      {/*
+        Two columns from lg up: a sticky category index on the left, the menu on
+        the right. The page was a single max-w-2xl column centred in a 1440px
+        viewport, which left two thirds of the screen empty and gave a fifty-item
+        menu no navigation at all -- you scrolled and hoped.
+
+        The index is what both references do, and it earns its place rather than
+        filling space: it tells you what a kitchen serves before you scroll, and
+        it is the only way to reach "Desserts" on a long menu without dragging.
+        Anchor links, so it works with JavaScript disabled and the browser owns
+        the scrolling.
+      */}
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {itemCount === 0 ? (
           <EmptyMenu />
         ) : (
-          categories.map((category) => (
-            <section key={category.id} className="pt-7">
-              <h2 className="font-display text-lg font-semibold text-ink">
-                {category.name}
-                <span className="ml-2 text-sm font-normal text-ink-faint tabular">
-                  {category.items.length}
-                </span>
-              </h2>
-              {category.description && (
-                <p className="mt-1 text-sm text-ink-soft">{category.description}</p>
-              )}
-
-              <div className="mt-2">
-                {category.items.map((item) => (
-                  <MenuItemCard key={item.id} item={item} />
-                ))}
+          <div className="flex gap-10 lg:gap-14">
+            <nav
+              aria-label="Menu categories"
+              className="hidden w-48 shrink-0 lg:block"
+            >
+              {/* Sticky below the site header. `top` clears it so the index does
+                  not slide under the logo. */}
+              <div className="sticky top-6 pt-8">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+                  On the menu
+                </p>
+                <ul className="flex flex-col gap-0.5">
+                  {categories.map((category) => (
+                    <li key={category.id}>
+                      <a
+                        href={`#cat-${category.id}`}
+                        className="flex items-baseline justify-between gap-2 rounded-lg px-2.5 py-1.5 text-sm text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
+                      >
+                        <span className="truncate">{category.name}</span>
+                        <span className="tabular shrink-0 text-xs text-ink-faint">
+                          {category.items.length}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </section>
-          ))
+            </nav>
+
+            <div className="min-w-0 flex-1">
+              {categories.map((category) => (
+                <section
+                  key={category.id}
+                  id={`cat-${category.id}`}
+                  // scroll-mt so an anchor jump does not tuck the heading under
+                  // the sticky site header.
+                  className="scroll-mt-6 pt-8"
+                >
+                  <h2 className="font-display text-xl font-bold text-ink">
+                    {category.name}
+                    <span className="ml-2 text-sm font-normal text-ink-faint tabular">
+                      {category.items.length}
+                    </span>
+                  </h2>
+                  {category.description && (
+                    <p className="mt-1 text-sm text-ink-soft">{category.description}</p>
+                  )}
+
+                  <div className="mt-2">
+                    {category.items.map((item) => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        action={
+                          <AddToCart
+                            kitchenId={kitchenId}
+                            itemId={item.id}
+                            itemName={item.name}
+                            // A closed kitchen disables every add rather than
+                            // failing at checkout. The reason is the kitchen's,
+                            // not the dish's, so it is stated once here.
+                            disabled={!menu.kitchen.is_open}
+                            disabledReason="Closed"
+                          />
+                        }
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

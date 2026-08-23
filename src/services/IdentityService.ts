@@ -1,5 +1,6 @@
-import { request, tokens } from '@/lib/api/client'
-import type { AuthResponse, User } from '@/lib/api/types'
+import { api } from '@/lib/api/client'
+import { tokens } from '@/lib/api/tokens'
+import type { AuthResponse, OtpRequested, User } from '@/lib/api/types'
 
 /**
  * Authentication — the `identity` backend module.
@@ -22,22 +23,14 @@ const IdentityService = {
     password: string
     email?: string
   }): Promise<AuthResponse> => {
-    const auth = await request<AuthResponse>('/auth/register', {
-      method: 'POST',
-      auth: false,
-      body: input,
-    })
+    const auth = await api.post<AuthResponse>('/auth/register', input, { auth: false })
     tokens.set(auth.access_token, auth.refresh_token)
     return auth
   },
 
   /** Password login. */
   login: async (phone: string, password: string): Promise<AuthResponse> => {
-    const auth = await request<AuthResponse>('/auth/login', {
-      method: 'POST',
-      auth: false,
-      body: { phone, password },
-    })
+    const auth = await api.post<AuthResponse>('/auth/login', { phone, password }, { auth: false })
     tokens.set(auth.access_token, auth.refresh_token)
     return auth
   },
@@ -45,26 +38,19 @@ const IdentityService = {
   /**
    * Sends a login OTP.
    *
-   * Returns nothing on purpose. The backend answers identically whether or not
-   * the phone number is registered, because a different response for each would
-   * turn this endpoint into a free "is this person a customer" oracle. Surfacing
-   * that difference here would undo it.
+   * Returns the response body, which carries `debug_code` outside production so
+   * local development needs no SMS provider. An earlier version returned void on
+   * the reasoning that the response must not reveal whether a number is
+   * registered — correct concern, wrong remedy: the BACKEND already answers
+   * identically either way, and none of these fields distinguish the two cases.
+   * Throwing the body away only hid the development code from the sign-in sheet.
    */
-  requestOtp: async (phone: string): Promise<void> => {
-    await request<unknown>('/auth/otp/request', {
-      method: 'POST',
-      auth: false,
-      body: { phone },
-    })
-  },
+  requestOtp: async (phone: string): Promise<OtpRequested> =>
+    api.post<OtpRequested>('/auth/otp/request', { phone }, { auth: false }),
 
   /** Exchanges an OTP for a session. Registers the user if they are new. */
   verifyOtp: async (phone: string, code: string): Promise<AuthResponse> => {
-    const auth = await request<AuthResponse>('/auth/otp/verify', {
-      method: 'POST',
-      auth: false,
-      body: { phone, code },
-    })
+    const auth = await api.post<AuthResponse>('/auth/otp/verify', { phone, code }, { auth: false })
     tokens.set(auth.access_token, auth.refresh_token)
     return auth
   },
@@ -78,7 +64,7 @@ const IdentityService = {
    */
   logout: async (): Promise<void> => {
     try {
-      await request<unknown>('/auth/logout', { method: 'POST' })
+      await api.post('/auth/logout')
     } finally {
       tokens.clear()
     }
@@ -87,7 +73,7 @@ const IdentityService = {
   /** Ends every session for this user. For "sign out of all devices". */
   logoutEverywhere: async (): Promise<void> => {
     try {
-      await request<unknown>('/auth/logout-all', { method: 'POST' })
+      await api.post('/auth/logout-all')
     } finally {
       tokens.clear()
     }

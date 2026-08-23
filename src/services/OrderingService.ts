@@ -1,4 +1,4 @@
-import { newIdempotencyKey, request } from '@/lib/api/client'
+import { api, newIdempotencyKey, type CallOptions } from '@/lib/api/client'
 import { setCartCount } from '@/lib/cart-store'
 import type { Cart, CheckoutResult, Order, PaymentMethod } from '@/lib/api/types'
 
@@ -14,23 +14,43 @@ import type { Cart, CheckoutResult, Order, PaymentMethod } from '@/lib/api/types
  *
  * Mutations are not cache-wrapped. `getOrder` is not either — an order's status
  * is the one thing on the page that must never be a stale read.
+ *
+ * EVERY method takes `options` last, and spreads it AFTER this service's own
+ * defaults. That ordering is the whole contract:
+ *
+ *     { timeoutMs: 30_000, retry: 5, ...options, idempotencyKey }
+ *       └─ sensible default   └─ caller wins   └─ never overridable
+ *
+ * So a call site gets the right behaviour for free — checkout is patient and
+ * retried, a status poll is not — while a caller who knows better can still say
+ * `{ timeoutMs: 60_000 }` or `{ retry: false }`. What a caller may NOT override
+ * is anything load-bearing for correctness, which is why `idempotencyKey` is
+ * spread last: an accidental `options.idempotencyKey` cannot displace the real
+ * one and turn a retry into a second order.
+ *
+ * The badge tracks `item_count`, not `lines.length`. Those differ the moment
+ * somebody orders two of anything, and the count in the corner of the screen
+ * should match the number of things being delivered.
  */
 const OrderingService = {
-  getCart: async (): Promise<Cart> => {
-    const cart = await request<Cart>('/cart')
-    setCartCount(cart.lines?.length ?? 0)
+  getCart: async (options?: CallOptions): Promise<Cart> => {
+    const cart = await api.get<Cart>('/cart', options)
+    setCartCount(cart.item_count ?? 0)
     return cart
   },
 
-  addToCart: async (input: {
-    kitchen_id: string
-    menu_item_id: string
-    quantity: number
-    modifier_ids?: string[]
-    note?: string
-  }): Promise<Cart> => {
-    const cart = await request<Cart>('/cart/items', { method: 'POST', body: input })
-    setCartCount(cart.lines?.length ?? 0)
+  addToCart: async (
+    input: {
+      kitchen_id: string
+      menu_item_id: string
+      quantity: number
+      modifier_ids?: string[]
+      note?: string
+    },
+    options?: CallOptions,
+  ): Promise<Cart> => {
+    const cart = await api.post<Cart>('/cart/items', input, options)
+    setCartCount(cart.item_count ?? 0)
     return cart
   },
 
@@ -39,17 +59,18 @@ const OrderingService = {
    *  Absolute deliberately: a delta sent twice by a retrying network adds the
    *  item twice, and the stepper is exactly the control a flaky connection makes
    *  someone tap repeatedly. */
-  setQuantity: async (lineId: string, quantity: number): Promise<Cart> => {
-    const cart = await request<Cart>(`/cart/items/${lineId}`, {
-      method: 'PATCH',
-      body: { quantity },
-    })
-    setCartCount(cart.lines?.length ?? 0)
+  setQuantity: async (
+    lineId: string,
+    quantity: number,
+    options?: CallOptions,
+  ): Promise<Cart> => {
+    const cart = await api.patch<Cart>(`/cart/items/${lineId}`, { quantity }, options)
+    setCartCount(cart.item_count ?? 0)
     return cart
   },
 
-  clearCart: async (): Promise<void> => {
-    await request<unknown>('/cart', { method: 'DELETE' })
+  clearCart: async (options?: CallOptions): Promise<void> => {
+    await api.delete('/cart', options)
     setCartCount(0)
   },
 
@@ -71,10 +92,21 @@ const OrderingService = {
       note?: string
     },
     idempotencyKey: string,
+    options?: CallOptions,
   ): Promise<CheckoutResult> => {
-    const result = await request<CheckoutResult>('/checkout', {
-      method: 'POST',
-      body: input,
+    const result = await api.post<CheckoutResult>('/checkout', input, {
+      // 30s, double the default. Checkout is the slowest write in the system: it
+      // prices the order, reserves stock under row locks, writes an outbox event
+      // and may call a payment gateway. Timing it out at 15s would abandon work
+      // the server is still doing.
+      timeoutMs: 30_000,
+      // Five attempts, above the default three. Losing a placed order to a flaky
+      // moment is the worst failure this app has, and the idempotency key makes
+      // the retries free of duplicate-order risk — that is precisely what the key
+      // is for.
+      retry: 5,
+      ...options,
+      // Last, deliberately: correctness is not the caller's to override.
       idempotencyKey,
     })
     // The server cart is consumed by a successful checkout, so the badge must
@@ -87,16 +119,19 @@ const OrderingService = {
    *  payment sheet, never per retry. */
   newCheckoutKey: (): string => newIdempotencyKey(),
 
-  getOrder: async (orderId: string): Promise<Order> =>
-    request<Order>(`/orders/${orderId}`),
+  /** Options forwarded so a polling caller can abort the in-flight read when the
+   *  component unmounts, rather than resolving into a dead component. */
+  getOrder: async (orderId: string, options?: CallOptions): Promise<Order> =>
+    api.get<Order>(`/orders/${orderId}`, options),
 
   /** Cancels an order. The backend enforces whether the state machine still
    *  allows it — this will throw ApiError if the kitchen has started cooking. */
-  cancelOrder: async (orderId: string, reason?: string): Promise<Order> =>
-    request<Order>(`/orders/${orderId}/cancel`, {
-      method: 'POST',
-      body: { reason: reason ?? '' },
-    }),
+  cancelOrder: async (
+    orderId: string,
+    reason?: string,
+    options?: CallOptions,
+  ): Promise<Order> =>
+    api.post<Order>(`/orders/${orderId}/cancel`, { reason: reason ?? '' }, options),
 }
 
 export default OrderingService

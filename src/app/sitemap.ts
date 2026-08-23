@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { request } from '@/lib/api/client'
+import { api } from '@/lib/api/client'
 import { SITE_URL } from '@/lib/seo'
 import type { NearbyKitchen } from '@/lib/api/types'
 
@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // deliberate placeholder: it should become a proper "all active kitchens"
     // endpoint rather than a geo query, since a sitemap wants everything and not
     // what is near a point.
-    const result = await request<{ kitchens: NearbyKitchen[] }>(
+    const result = await api.get<{ kitchens: NearbyKitchen[] }>(
       '/kitchens/nearby?lat=26.85&lng=80.947&radius_m=50000&limit=100',
       { auth: false, revalidate: 3600 },
     )

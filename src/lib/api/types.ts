@@ -69,6 +69,27 @@ export type User = {
   created_at: string
 }
 
+/**
+ * Response to an OTP request.
+ *
+ * Deliberately says NOTHING about whether the phone number is registered — the
+ * backend answers identically either way, because a different response for a
+ * known number would turn this endpoint into a free "is this person a customer"
+ * oracle. Returning the body is still safe: none of these fields distinguish the
+ * two cases.
+ */
+export type OtpRequested = {
+  sent: boolean
+  /** Seconds until the code expires. */
+  expires_in: number
+  /**
+   * The code itself, returned ONLY when the API is not running in production.
+   * Its absence is the security property, so treat it as optional forever and
+   * never build a flow that requires it.
+   */
+  debug_code?: string
+}
+
 export type AuthResponse = {
   user: User
   access_token: string
@@ -204,22 +225,54 @@ export type NearbyKitchen = Kitchen & {
 // Cart & ordering
 // ---------------------------------------------------------------------------
 
+/**
+ * One line in the server cart.
+ *
+ * The identifier is `line_id`, NOT `id`. Verified against the running API. This
+ * mattered: `setQuantity(line.id, n)` would have read `undefined` and issued
+ * `PATCH /cart/items/undefined` — no TypeScript error, no runtime error at the
+ * call site, just a 404 or a 400 from the server on every quantity change.
+ *
+ * `modifiers` and `note` are REQUEST fields, not response fields — the cart
+ * response does not echo them back. They were declared here as optional response
+ * fields, which is worse than omitting them: optional means "sometimes present",
+ * so a reader would write code for a case that can never happen.
+ */
 export type CartLine = {
-  id: string
+  line_id: string
   menu_item_id: string
   name: string
   quantity: number
   unit_price_minor: Paise
   line_total_minor: Paise
-  modifiers?: { id: string; name: string; price_minor: Paise }[]
-  note?: string
+  /** False when the dish sold out after it went in the cart. */
+  is_available: boolean
 }
 
+/**
+ * The server cart. Every field below was read off the live response.
+ *
+ * The previous version of this type had four of the ten fields, which meant a
+ * cart page literally could not render a total — the numbers were not in the
+ * type, so nobody could reach for them.
+ *
+ * `item_count` is the sum of QUANTITIES, not the number of lines. Two biryanis
+ * on one line is item_count 2. The badge was using `lines.length` and would have
+ * shown "1".
+ */
 export type Cart = {
+  /** Absent on an empty cart — a cart belongs to at most one kitchen. */
   kitchen_id?: string
   lines: CartLine[]
   item_count: number
   subtotal_minor: Paise
+  packaging_fee_minor: Paise
+  delivery_fee_minor: Paise
+  tax_minor: Paise
+  total_minor: Paise
+  /** False blocks checkout. The reason is customer-facing copy. */
+  kitchen_open: boolean
+  closed_reason?: string
 }
 
 export type OrderStatus =
@@ -238,7 +291,9 @@ export type OrderStatus =
 export type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'wallet' | 'cod'
 
 export type OrderLine = {
-  menu_item_id: string
+  /** Absent in the checkout response, present when reading an order back. Not
+   *  needed to render a line, so optional rather than required. */
+  menu_item_id?: string
   name: string
   quantity: number
   unit_price_minor: Paise
@@ -260,6 +315,12 @@ export type Order = {
   total_minor: Paise
   payment_method: PaymentMethod
   coupon_code?: string
+  /** Pre-formatted single line, e.g. "12 Hazratganj, Lucknow, 226001". The API
+   *  flattens it, so there is no structured address to re-format here. */
+  delivery_address?: string
+  /** The SERVER's ruling on whether cancelling is still allowed — it depends on
+   *  the order's state machine, so never infer it from `status` on the client. */
+  can_cancel: boolean
   promised_at?: string
   created_at: string
 }

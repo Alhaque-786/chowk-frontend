@@ -1,4 +1,4 @@
-import { request } from '@/lib/api/client'
+import { api, type CallOptions } from '@/lib/api/client'
 import type { Address } from '@/lib/api/types'
 
 /**
@@ -11,9 +11,16 @@ import type { Address } from '@/lib/api/types'
  * has a door number and a landmark, and coordinates do not.
  */
 const AddressService = {
-  /** Every saved address. Requires auth. */
-  list: async (): Promise<Address[]> => {
-    const result = await request<{ addresses: Address[] }>('/addresses')
+  /**
+   * Every saved address. Requires auth.
+   *
+   * Takes CallOptions so a caller can pass `signal` and abort on unmount, or
+   * shorten `timeoutMs`. The transport has supported both all along; not
+   * forwarding them here meant a component could not use either — a service that
+   * hides its transport's capabilities is a service you end up working around.
+   */
+  list: async (options?: CallOptions): Promise<Address[]> => {
+    const result = await api.get<{ addresses: Address[] }>('/addresses', options)
     return result.addresses ?? []
   },
 
@@ -24,19 +31,19 @@ const AddressService = {
    * with exactly one saved address has clearly told us where they are, whether or
    * not a flag got set.
    */
-  getDefault: async (): Promise<Address | null> => {
-    const addresses = await AddressService.list()
+  getDefault: async (options?: CallOptions): Promise<Address | null> => {
+    const addresses = await AddressService.list(options)
     return addresses.find((a) => a.is_default) ?? addresses[0] ?? null
   },
 
   create: async (address: Omit<Address, 'id'>): Promise<Address> =>
-    request<Address>('/addresses', { method: 'POST', body: address }),
+    api.post<Address>('/addresses', address),
 
   update: async (addressId: string, patch: Partial<Address>): Promise<Address> =>
-    request<Address>(`/addresses/${addressId}`, { method: 'PATCH', body: patch }),
+    api.patch<Address>(`/addresses/${addressId}`, patch),
 
   remove: async (addressId: string): Promise<void> => {
-    await request<unknown>(`/addresses/${addressId}`, { method: 'DELETE' })
+    await api.delete(`/addresses/${addressId}`)
   },
 }
 

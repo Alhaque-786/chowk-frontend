@@ -1,5 +1,5 @@
 import { cache } from 'react'
-import { request } from '@/lib/api/client'
+import { api, type CallOptions } from '@/lib/api/client'
 import type { CouponCheck, Offer } from '@/lib/api/types'
 
 /**
@@ -13,12 +13,13 @@ import type { CouponCheck, Offer } from '@/lib/api/types'
 const PromotionService = {
   /** Live offers, optionally for one kitchen. Degrades to empty — a missing
    *  offers rail is not an error worth a blank page. */
-  listOffers: cache(async (kitchenId?: string): Promise<Offer[]> => {
+  listOffers: cache(async (kitchenId?: string, options?: CallOptions): Promise<Offer[]> => {
     try {
       const query = kitchenId ? `?kitchen_id=${kitchenId}` : ''
-      const result = await request<{ offers: Offer[] }>(`/offers${query}`, {
+      const result = await api.get<{ offers: Offer[] }>(`/offers${query}`, {
         auth: false,
         revalidate: 300,
+        ...options,
       })
       return result.offers ?? []
     } catch {
@@ -37,12 +38,23 @@ const PromotionService = {
    * transaction, because a coupon's global cap can be exhausted between this
    * call and the order being placed.
    */
-  checkCode: async (code: string, kitchenId: string): Promise<CouponCheck> =>
-    request<CouponCheck>('/offers/check', {
-      method: 'POST',
-      auth: false,
-      body: { code, kitchen_id: kitchenId },
-    }),
+  checkCode: async (
+    code: string,
+    kitchenId: string,
+    options?: CallOptions,
+  ): Promise<CouponCheck> =>
+    api.post<CouponCheck>(
+      '/offers/check',
+      { code, kitchen_id: kitchenId },
+      {
+        auth: false,
+        // Typed into a box by a person who is waiting: fail fast and let them
+        // retype rather than making them watch a spinner for fifteen seconds.
+        timeoutMs: 5_000,
+        retry: false,
+        ...options,
+      },
+    ),
 }
 
 export default PromotionService

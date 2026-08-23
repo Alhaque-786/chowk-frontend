@@ -1,140 +1,53 @@
 /**
  * The single place that talks to the backend.
  *
- * Everything goes through `request()`, which means token handling, the response
- * envelope, error translation and refresh-on-401 exist exactly once. A component
- * that calls `fetch` directly bypasses all four, so it should not.
+ * Everything goes through `send`, so token handling, the response envelope, error
+ * translation, timeouts, retries and refresh-on-401 exist exactly once. A
+ * component calling `fetch` directly bypasses all six.
+ *
+ * Errors live in `./errors`, session storage in `./tokens`. This file is only the
+ * request.
  */
 
-import type { ApiErrorBody, Envelope } from './types'
+import {
+  ApiError,
+  NetworkError,
+  ServerError,
+  TimeoutError,
+  isRetryable,
+} from './errors'
+import { tokens } from './tokens'
+import type { Envelope } from './types'
 
-const BASE_URL =
+/**
+ * Trailing slash stripped, because the env var is written by hand and
+ * `.../api/v1/` + `/cart` gives `/api/v1//cart` — which some routers treat as a
+ * different path and 404. Normalising once beats every call site remembering.
+ */
+const BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080/api/v1'
+).replace(/\/+$/, '')
 
 /**
- * ApiError carries the backend's STABLE code, not just a message.
+ * Default timeout.
  *
- * UI logic branches on `code`. Branching on `message` would break the moment
- * someone improves the copy, and the backend treats those messages as
- * customer-facing text that is expected to change.
+ * `fetch` has NONE. A connection that opens and then stalls hangs until the
+ * browser gives up, which can be minutes — to a customer that is a spinner that
+ * never resolves, and it is worse than an error because there is nothing to act
+ * on. 15s is generous for this API, whose slowest measured endpoint was under
+ * 100ms at p99, while still tolerating a bad mobile connection.
  */
-export class ApiError extends Error {
-  readonly code: string
-  readonly status: number
-  readonly fields?: Record<string, string>
-  readonly traceId?: string
+const DEFAULT_TIMEOUT_MS = 15_000
 
-  constructor(status: number, body: ApiErrorBody) {
-    super(body.message)
-    this.name = 'ApiError'
-    this.status = status
-    this.code = body.code
-    this.fields = body.fields
-    this.traceId = body.trace_id
-  }
+/** Default attempts for a request that is safe to repeat. See `canRetry`. */
+const DEFAULT_ATTEMPTS = 3
 
-  /** The customer needs to sign in again — not merely retry. */
-  get isAuthFailure(): boolean {
-    return (
-      this.status === 401 ||
-      this.code === 'TOKEN_EXPIRED' ||
-      this.code === 'SESSION_REVOKED' ||
-      this.code === 'TOKEN_REUSE_DETECTED'
-    )
-  }
+/** Ceiling on what a caller may ask for, so one call site cannot hammer a failing
+ *  server for a minute. */
+const MAX_ATTEMPTS_ALLOWED = 6
 
-  /** Worth surfacing a "try again" affordance rather than a hard failure. */
-  get isRetryable(): boolean {
-    return this.status === 429 || this.status >= 500
-  }
-
-  /** Attach these to form inputs rather than showing one banner. */
-  get fieldErrors(): Record<string, string> {
-    return this.fields ?? {}
-  }
-}
-
-/** Thrown when the network never reached the API, which is a different problem. */
-export class NetworkError extends Error {
-  constructor(cause: unknown) {
-    super('Could not reach the server. Check your connection and try again.')
-    this.name = 'NetworkError'
-    this.cause = cause
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Token storage
-// ---------------------------------------------------------------------------
-
-const ACCESS_KEY = 'chowk.access_token'
-const REFRESH_KEY = 'chowk.refresh_token'
-
-/**
- * Tokens live in localStorage.
- *
- * The honest trade: this is readable by any script on the origin, so an XSS
- * becomes a token theft. httpOnly cookies would prevent that, but need the API
- * to set them — which means a same-site deployment or a proxy route, and CSRF
- * protection on every mutation.
- *
- * localStorage is the right call for now because the access token lives 15
- * minutes and refresh tokens rotate with reuse detection, so a stolen token is
- * one extra session rather than permanent access. Revisit before handling
- * anything more sensitive than an order history.
- *
- * Every accessor is guarded: this module is imported by Server Components where
- * `window` does not exist, and a bare `localStorage` reference would crash the
- * render rather than the call.
- */
-export const tokens = {
-  access(): string | null {
-    if (typeof window === 'undefined') return null
-    try {
-      return window.localStorage.getItem(ACCESS_KEY)
-    } catch {
-      // Private mode, or site data blocked. Treat as signed out.
-      return null
-    }
-  },
-
-  refresh(): string | null {
-    if (typeof window === 'undefined') return null
-    try {
-      return window.localStorage.getItem(REFRESH_KEY)
-    } catch {
-      return null
-    }
-  },
-
-  set(access: string, refresh: string): void {
-    if (typeof window === 'undefined') return
-    try {
-      window.localStorage.setItem(ACCESS_KEY, access)
-      window.localStorage.setItem(REFRESH_KEY, refresh)
-    } catch {
-      // Nothing useful to do; the session simply will not persist a reload.
-    }
-  },
-
-  clear(): void {
-    if (typeof window === 'undefined') return
-    try {
-      window.localStorage.removeItem(ACCESS_KEY)
-      window.localStorage.removeItem(REFRESH_KEY)
-    } catch {
-      /* ignore */
-    }
-  },
-
-  isSignedIn(): boolean {
-    return tokens.access() !== null
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Request
-// ---------------------------------------------------------------------------
+/** Base backoff. Full jitter is applied per attempt — see `backoffFor`. */
+const RETRY_BASE_MS = 250
 
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -143,23 +56,51 @@ export type RequestOptions = {
   auth?: boolean
   /**
    * Makes a retried write safe. The backend replays the first response for a
-   * repeated key, so a flaky mobile network cannot produce a second order.
-   * Required by the API on checkout.
+   * repeated key, so a flaky network cannot produce a second order.
+   *
+   * It also UNLOCKS automatic retries for this call: without a key, a POST is
+   * only retried when the request provably never arrived.
    */
   idempotencyKey?: string
   /** Next.js fetch cache. `fetch` is NOT cached by default in this version. */
   cache?: RequestCache
   revalidate?: number
+  /** Caller's abort signal. Composed with the timeout, never replaced by it. */
   signal?: AbortSignal
+  /** Override the default timeout. 0 disables it — use only for a known-slow
+   *  endpoint, never as a way to silence a hang. */
+  timeoutMs?: number
+  /**
+   * Retry policy for this call.
+   *
+   *   omitted   default of MAX_ATTEMPTS
+   *   false     no retries — the caller handles failure itself
+   *   true      the default, stated explicitly
+   *   number    that many total attempts (1 means "try once", same as false)
+   *
+   * A number rather than only a boolean because the right count is a property of
+   * the CALL, not of the transport: a build-time read can afford five attempts
+   * and a poll that runs every fifteen seconds should not retry at all, since the
+   * next tick is already the retry.
+   */
+  retry?: boolean | number
 }
 
+/** What a verb helper accepts. `method` and `body` come from the verb and the
+ *  argument, so removing them here makes the wrong call impossible to write. */
+export type CallOptions = Omit<RequestOptions, 'method' | 'body'>
+
+// ---------------------------------------------------------------------------
+// Session refresh
+// ---------------------------------------------------------------------------
+
 /**
- * refreshInFlight collapses concurrent refreshes.
+ * Collapses concurrent refreshes into one.
  *
- * Without it, three requests 401-ing together would each POST /auth/refresh —
+ * Without this, three requests 401-ing together would each POST /auth/refresh —
  * and since refresh tokens are single-use with reuse detection, the second and
- * third would look like theft and revoke every session. So the deduplication is
- * not an optimisation; it prevents the client logging itself out.
+ * third look like theft and revoke every session. The deduplication is not an
+ * optimisation; it stops the client logging itself out.
  */
 let refreshInFlight: Promise<boolean> | null = null
 
@@ -173,10 +114,12 @@ async function refreshSession(): Promise<boolean> {
     try {
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ refresh_token: refresh }),
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
       })
       if (!res.ok) {
+        // The server rejected the refresh token: this session is over.
         tokens.clear()
         return false
       }
@@ -191,8 +134,8 @@ async function refreshSession(): Promise<boolean> {
       tokens.set(envelope.data.access_token, envelope.data.refresh_token)
       return true
     } catch {
-      // A network failure is not a revoked session; keep the tokens so the next
-      // attempt can succeed.
+      // A network failure is not a revoked session. Keep the tokens so the next
+      // attempt can succeed — clearing here would sign people out on a tunnel.
       return false
     } finally {
       refreshInFlight = null
@@ -202,17 +145,83 @@ async function refreshSession(): Promise<boolean> {
   return refreshInFlight
 }
 
-async function send<T>(
+// ---------------------------------------------------------------------------
+// Retry policy
+// ---------------------------------------------------------------------------
+
+/** Methods that are idempotent by HTTP definition: repeating them cannot create
+ *  a second side effect, whatever the server did with the first. */
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'PUT', 'DELETE'])
+
+/**
+ * Whether this failure may be retried.
+ *
+ * The subtle case is a POST. A POST that times out may have been processed, so
+ * repeating it can place a second order. So a POST is retried only when either:
+ *
+ *   - it carries an idempotency key, which makes the server deduplicate it, or
+ *   - the failure proves the request never arrived (NetworkError).
+ *
+ * That distinction is the whole reason `TimeoutError` is separate from
+ * `NetworkError`: one means "never sent", the other means "we stopped listening".
+ */
+function canRetry(
+  err: unknown,
+  method: string,
+  idempotencyKey: string | undefined,
+  attempt: number,
+  maxAttempts: number,
+): boolean {
+  if (attempt >= maxAttempts) return false
+  if (!isRetryable(err)) return false
+
+  if (SAFE_METHODS.has(method)) return true
+  if (idempotencyKey) return true
+  return err instanceof NetworkError
+}
+
+/**
+ * Exponential backoff with FULL jitter: a uniform delay in [0, base * 2^n).
+ *
+ * Full jitter rather than base-plus-jitter because the goal is to SPREAD clients
+ * that failed together — a fixed floor keeps them bunched at that floor and they
+ * collide again. Same reasoning as the serialisable-retry backoff on the server.
+ */
+function backoffFor(attempt: number): number {
+  return Math.random() * RETRY_BASE_MS * 2 ** (attempt - 1)
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+// ---------------------------------------------------------------------------
+// The request
+// ---------------------------------------------------------------------------
+
+/**
+ * Composes the caller's signal with the timeout.
+ *
+ * Both must be able to abort: the caller's for unmount, ours for a stall.
+ * `AbortSignal.any` is the built-in way to say that; hand-rolling it with a
+ * listener leaks the listener when the caller's signal outlives the request.
+ */
+function signalFor(options: RequestOptions): AbortSignal | undefined {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+  const timeout = timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined
+
+  if (timeout && options.signal) return AbortSignal.any([options.signal, timeout])
+  return timeout ?? options.signal
+}
+
+async function attempt<T>(
   path: string,
   options: RequestOptions,
-  isRetry: boolean,
+  isAuthRetry: boolean,
 ): Promise<T> {
   const { method = 'GET', body, auth = true, idempotencyKey } = options
 
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = { Accept: 'application/json' }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
-
   if (auth) {
     const token = tokens.access()
     if (token) headers.Authorization = `Bearer ${token}`
@@ -225,26 +234,37 @@ async function send<T>(
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: options.cache,
-      signal: options.signal,
+      signal: signalFor(options),
       ...(options.revalidate !== undefined
         ? { next: { revalidate: options.revalidate } }
         : {}),
     })
   } catch (cause) {
+    // A timeout arrives as an AbortError, indistinguishable from an unmount
+    // abort except by which signal fired. TimeoutError carries the different
+    // retry meaning, so the two must not collapse into one.
+    if (cause instanceof DOMException && cause.name === 'TimeoutError') {
+      throw new TimeoutError(options.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+    }
+    // A caller-initiated abort is not a failure — rethrow it untouched so the
+    // caller can recognise its own cancellation.
+    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
     throw new NetworkError(cause)
   }
 
-  // 204 has no body to parse.
+  // 204 carries no body.
   if (res.status === 204) return undefined as T
+
+  const text = await res.text()
 
   let envelope: Envelope<T>
   try {
-    envelope = (await res.json()) as Envelope<T>
-  } catch (cause) {
-    // A non-JSON response means something upstream of the API answered — a
-    // proxy, a gateway timeout page. The backend itself always sends the
-    // envelope, including for 404s.
-    throw new NetworkError(cause)
+    envelope = JSON.parse(text) as Envelope<T>
+  } catch {
+    // Not our envelope, so something upstream of the API answered: a proxy, a
+    // gateway timeout page. The backend always sends the envelope, including for
+    // 404s — so this is a ServerError, not a network problem.
+    throw new ServerError(res.status, text.slice(0, 500))
   }
 
   if (!res.ok || envelope.error) {
@@ -253,12 +273,11 @@ async function send<T>(
       envelope.error ?? { code: 'UNKNOWN', message: 'Something went wrong.' },
     )
 
-    // One transparent refresh attempt. `isRetry` stops an expired refresh token
-    // from looping.
-    if (error.isAuthFailure && auth && !isRetry && tokens.refresh()) {
-      if (await refreshSession()) {
-        return send<T>(path, options, true)
-      }
+    // One transparent refresh. `isAuthRetry` stops an expired refresh token from
+    // looping, and this is separate from the retry loop below because a 401 is
+    // not "try again", it is "get a new token and try once".
+    if (error.isAuthFailure && auth && !isAuthRetry && tokens.refresh()) {
+      if (await refreshSession()) return attempt<T>(path, options, true)
     }
     throw error
   }
@@ -266,17 +285,84 @@ async function send<T>(
   return envelope.data as T
 }
 
-/** Make an API call. Throws ApiError or NetworkError; never returns an error. */
-export function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  return send<T>(path, options, false)
+/**
+ * The low-level call, with timeout and retry applied.
+ *
+ * Prefer `api.get` / `api.post`. This stays exported for the rare caller that
+ * needs to choose `method` at runtime.
+ */
+export async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const method = options.method ?? 'GET'
+  const maxAttempts = attemptsFor(options.retry)
+  let lastError: unknown
+
+  for (let n = 1; n <= maxAttempts; n++) {
+    try {
+      return await attempt<T>(path, options, false)
+    } catch (err) {
+      lastError = err
+      if (!canRetry(err, method, options.idempotencyKey, n, maxAttempts)) throw err
+      await sleep(backoffFor(n))
+    }
+  }
+  throw lastError
 }
+
+/**
+ * Turns the `retry` option into an attempt count.
+ *
+ * Clamped at both ends: below 1 would mean "never even try", and the upper bound
+ * stops a single call site from hammering a failing server for a minute because
+ * somebody typed 50.
+ */
+function attemptsFor(retry: boolean | number | undefined): number {
+  if (retry === false) return 1
+  if (retry === true || retry === undefined) return DEFAULT_ATTEMPTS
+  return Math.min(Math.max(Math.trunc(retry), 1), MAX_ATTEMPTS_ALLOWED)
+}
+
+/**
+ * The verb-shaped interface every service uses.
+ *
+ * `request('/cart/items', { method: 'POST', body: input })` states the same thing
+ * three times and buries the interesting part — the path — behind ceremony.
+ * `api.post('/cart/items', input)` reads as the sentence it is.
+ *
+ * It also removes a class of mistake rather than just noise. With `method` in an
+ * options bag, `request(path, { body })` silently sends a GET with a body, which
+ * some servers accept and most ignore — no type error, no runtime error, a
+ * request that quietly does nothing. Here the verb picks the method, so that call
+ * cannot be written: `CallOptions` omits `method` and `body` entirely.
+ */
+export const api = {
+  get: <T>(path: string, options: CallOptions = {}): Promise<T> =>
+    request<T>(path, { ...options, method: 'GET' }),
+
+  post: <T>(path: string, body?: unknown, options: CallOptions = {}): Promise<T> =>
+    request<T>(path, { ...options, method: 'POST', body }),
+
+  patch: <T>(path: string, body?: unknown, options: CallOptions = {}): Promise<T> =>
+    request<T>(path, { ...options, method: 'PATCH', body }),
+
+  put: <T>(path: string, body?: unknown, options: CallOptions = {}): Promise<T> =>
+    request<T>(path, { ...options, method: 'PUT', body }),
+
+  // `delete` is a reserved word, but a reserved word is a legal property name.
+  // `api.delete(...)` matching the HTTP verb is worth more than avoiding it.
+  delete: <T>(path: string, options: CallOptions = {}): Promise<T> =>
+    request<T>(path, { ...options, method: 'DELETE' }),
+} as const
 
 /**
  * Generates an idempotency key for a write.
  *
- * crypto.randomUUID where available. The key must be stable across retries of
- * the SAME logical action, so it is generated once by the caller and reused —
- * generating it inside the retry would defeat the entire mechanism.
+ * The key must be stable across retries of the SAME logical action, so it is
+ * generated once by the caller and reused — generating it per attempt would
+ * defeat the entire mechanism. That is why this is a separate function and not
+ * something the transport does for you.
  */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
