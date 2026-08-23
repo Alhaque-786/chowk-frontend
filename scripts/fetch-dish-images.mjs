@@ -37,7 +37,7 @@ const MANIFEST = join(process.cwd(), 'src', 'lib', 'dish-photos.generated.json')
  * food search and which are useless here.
  */
 const WANTED = [
-  { slug: 'mutton-biryani',   search: 'mutton biryani plate filetype:bitmap' },
+  { slug: 'mutton-biryani',   search: 'mutton biryani served plate rice filetype:bitmap' },
   { slug: 'chicken-biryani',  search: 'chicken biryani filetype:bitmap' },
   { slug: 'seekh-kebab',      search: 'Indian chicken seekh kebab filetype:bitmap' },
   { slug: 'tandoori-platter', search: 'tandoori platter filetype:bitmap' },
@@ -46,10 +46,10 @@ const WANTED = [
   { slug: 'dal-makhani',      search: 'dal makhani filetype:bitmap' },
   { slug: 'chole-bhature',    search: 'chole bhature filetype:bitmap' },
   { slug: 'thali',            search: 'Indian thali meal filetype:bitmap' },
-  { slug: 'dosa',             search: 'masala dosa filetype:bitmap' },
+  { slug: 'dosa',             search: 'masala dosa chutney sambar plate filetype:bitmap' },
   { slug: 'naan',             search: 'naan bread tandoor filetype:bitmap' },
   { slug: 'rogan-josh',       search: 'rogan josh mutton curry filetype:bitmap' },
-  { slug: 'samosa',           search: 'samosa chaat filetype:bitmap' },
+  { slug: 'samosa',           search: 'samosa filetype:bitmap' },
   { slug: 'gulab-jamun',      search: 'gulab jamun filetype:bitmap' },
   { slug: 'kheer',            search: 'kheer rice pudding filetype:bitmap' },
   { slug: 'chai',             search: 'masala chai glass filetype:bitmap' },
@@ -62,10 +62,13 @@ const WANTED = [
   */
   { slug: 'cover-awadhi',     search: 'Awadhi cuisine spread filetype:bitmap' },
   { slug: 'cover-mughlai',    search: 'Mughlai food spread filetype:bitmap' },
-  { slug: 'cover-tandoor',    search: 'tandoor oven restaurant filetype:bitmap' },
+  { slug: 'cover-tandoor',    search: 'kebab platter grilled meat filetype:bitmap' },
   { slug: 'cover-southindian',search: 'South Indian meal banana leaf filetype:bitmap' },
-  { slug: 'cover-streetfood', search: 'Indian street food stall filetype:bitmap' },
+  { slug: 'cover-streetfood', search: 'chaat plate Indian snack filetype:bitmap' },
   { slug: 'cover-sweets',     search: 'Indian sweets shop mithai filetype:bitmap' },
+  // A sixth distinct cover: with five, two kitchens shared a photograph and the
+  // grid immediately looked like a bug.
+  { slug: 'cover-biryani',    search: 'biryani pot filetype:bitmap' },
 ]
 
 /**
@@ -114,7 +117,27 @@ async function politeFetch(url) {
   throw new Error('unreachable')
 }
 
+/**
+ * Prefers Commons' JURIED collections.
+ *
+ * The first version searched all of Commons and it showed: the chaat kitchen got
+ * a photograph of hands holding raw peas, and half the cuisine circles were
+ * unidentifiable at 88px. Commons is documentation photography, so a plain
+ * search optimises for "depicts the subject", not "is a good photograph".
+ *
+ * `incategory:"Quality images"` restricts to files that passed Commons' own
+ * photographic review -- sharpness, exposure, composition. That is the closest
+ * thing to a quality bar available without a commercial stock API. Searched
+ * FIRST, with the unrestricted search as a fallback, because the juried pool is
+ * small enough that some dishes are not in it at all.
+ */
 async function search(query) {
+  const juried = await rawSearch(`${query} incategory:"Quality images"`)
+  if (pick(juried)) return juried
+  return rawSearch(query)
+}
+
+async function rawSearch(query) {
   const url =
     `${API}?action=query&generator=search` +
     `&gsrsearch=${encodeURIComponent(query)}` +
@@ -135,13 +158,16 @@ async function search(query) {
  * than accepting-and-cropping is the difference between a designed grid and a
  * grid of accidents.
  */
-function pick(pages) {
+function pick(pages, minRatio = 1.2) {
   const usable = pages
     .map((p) => ({ page: p, info: p.imageinfo?.[0] }))
     .filter(({ info }) => info && /^image\/(jpeg|png)$/.test(info.mime))
     .filter(({ info }) => info.width >= 800)
-    // Prefer wider than tall; allow mild portrait but never a 2:3.
-    .filter(({ info }) => info.width / info.height >= 0.9)
+    // LANDSCAPE ONLY now, 1.2:1 or wider. Every slot these fill is either a
+    // 16:10 card or a circle, and a square-ish photo of a thali crops to its own
+    // rim in both. The earlier 0.9 threshold let portraits through and they are
+    // the ones that looked broken.
+    .filter(({ info }) => info.width / info.height >= minRatio)
 
   // Widest aspect first: least likely to lose the plate to a crop.
   usable.sort((a, b) => b.info.width / b.info.height - a.info.width / a.info.height)
@@ -177,16 +203,28 @@ try {
   /* first run */
 }
 
+// Optional slug filter, so a bad photograph can be replaced without re-fetching
+// the whole set and without hand-deleting files.
+const only = new Set(process.argv.slice(2))
+const forced = only.size > 0
+
 for (const { slug, search: query } of WANTED) {
+  if (forced && !only.has(slug)) continue
+
   const file = join(OUT_DIR, `${slug}.jpg`)
 
-  if ((await exists(file)) && manifest[slug]) {
+  // A forced slug is always re-fetched; that is the point of naming it.
+  if (!forced && (await exists(file)) && manifest[slug]) {
     console.log(`  skip   ${slug} (already have it)`)
     continue
   }
 
   try {
-    const chosen = pick(await search(query))
+    const pages = await search(query)
+    // Two-pass: prefer a properly landscape photo, then settle for anything not
+    // portrait. Refusing outright would leave a gradient tile where a usable
+    // squarish photograph exists, and a mild crop beats no photograph.
+    const chosen = pick(pages, 1.2) ?? pick(pages, 1.0)
     if (!chosen) {
       console.log(`  MISS   ${slug} — nothing usable, will fall back to a gradient`)
       continue

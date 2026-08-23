@@ -19,17 +19,23 @@ import { SectionHeading } from '@/components/ui/section-heading'
  * Each entry links into search, so the rail stays useful before there is enough
  * supply to justify dedicated category pages.
  */
+/*
+  Each tile's photograph is chosen for how it survives an 88px CIRCULAR crop, not
+  for how it looks full size. That rules out overhead shots -- dal-makhani.jpg is
+  a fine photograph and reads as a red ring at this size -- and anything where the
+  dish does not fill the centre. Two tiles were replaced on exactly that basis
+  after looking at a rendered screenshot rather than at the source files.
+*/
 const CUISINES: Array<{ label: string; query: string; photo: string }> = [
   { label: 'Biryani', query: 'biryani', photo: '/dishes/mutton-biryani.jpg' },
   { label: 'Kebab', query: 'kebab', photo: '/dishes/seekh-kebab.jpg' },
   { label: 'Thali', query: 'thali', photo: '/dishes/thali.jpg' },
   { label: 'Tandoori', query: 'tandoori', photo: '/dishes/tandoori-platter.jpg' },
   { label: 'Paneer', query: 'paneer', photo: '/dishes/paneer-tikka.jpg' },
-  { label: 'Dal', query: 'dal', photo: '/dishes/dal-makhani.jpg' },
+  { label: 'Curries', query: 'makhani', photo: '/dishes/butter-chicken.jpg' },
   { label: 'Breads', query: 'paratha', photo: '/dishes/naan.jpg' },
   { label: 'Chole', query: 'chole', photo: '/dishes/chole-bhature.jpg' },
   { label: 'Dosa', query: 'dosa', photo: '/dishes/dosa.jpg' },
-  { label: 'Curry', query: 'rogan', photo: '/dishes/rogan-josh.jpg' },
   { label: 'Chaat', query: 'samosa', photo: '/dishes/samosa.jpg' },
   { label: 'Sweets', query: 'gulab', photo: '/dishes/gulab-jamun.jpg' },
   { label: 'Kheer', query: 'kheer', photo: '/dishes/kheer.jpg' },

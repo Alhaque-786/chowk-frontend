@@ -1,12 +1,12 @@
 {
   "mutton-biryani": {
     "file": "/dishes/mutton-biryani.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ACombo%20lunch%20plate%20mix%20with%20Biriyani%2C%20prawn%20%26%20paneer.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3APatvelia9-Bhatia%20Residence%2CMumbai-Maharashtra.jpg",
     "width": 900,
-    "height": 506,
+    "height": 527,
     "licence": "CC BY-SA 4.0",
     "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "author": "Camellia singha roy",
+    "author": "CHEFTB2",
     "credit": "Own work"
   },
   "chicken-biryani": {
@@ -91,13 +91,13 @@
   },
   "dosa": {
     "file": "/dishes/dosa.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AMasala%20dosa%2001.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ADosa-chutney-sambhar.jpg",
     "width": 900,
-    "height": 554,
-    "licence": "CC BY-SA 4.0",
-    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "author": "Marajozkee",
-    "credit": "Own work"
+    "height": 599,
+    "licence": "CC BY 2.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/2.0",
+    "author": "Roland",
+    "credit": "https://www.flickr.com/photo_zoom.gne?id=190748357&amp;size=o"
   },
   "naan": {
     "file": "/dishes/naan.jpg",
@@ -161,12 +161,12 @@
   },
   "cover-tandoor": {
     "file": "/dishes/cover-tandoor.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AChicken%20Tandoori%2C%20Arsalan%20Restaurant%2C%20Kolkata.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AIraqi%20Mixed%20Grill%20Platter%20with%20Traditional%20Accompaniments.jpg",
     "width": 900,
-    "height": 506,
+    "height": 458,
     "licence": "CC BY-SA 4.0",
     "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "author": "Rakhshanda Mujib",
+    "author": "Abdulsalam Al Dabbagh",
     "credit": "Own work"
   },
   "cover-southindian": {
@@ -181,12 +181,12 @@
   },
   "cover-streetfood": {
     "file": "/dishes/cover-streetfood.jpg",
-    "sourcePage": "https://commons.wikimedia.org/wiki/File%3AIndia%20-%20Varanasi%20green%20peas%20-%202714.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3A%E0%A6%A6%E0%A6%87%20%E0%A6%AC%E0%A6%A1%E0%A6%BC%E0%A6%BE.jpg",
     "width": 900,
-    "height": 600,
-    "licence": "CC BY-SA 3.0",
-    "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-    "author": "Jorge Royan",
+    "height": 405,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "রাজশ্রী রায়",
     "credit": "Own work"
   },
   "cover-sweets": {

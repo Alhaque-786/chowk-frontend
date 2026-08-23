@@ -84,6 +84,13 @@ export default function HomePage() {
         is a nicety; the food is the point.
 
         Reveal survives on WhyChowk alone, which is genuinely below the fold.
+
+        Each section is a <section>, NOT a fragment. A fragment is not a neutral
+        wrapper inside a flex container -- its children become flex children of
+        the PARENT, so this column's `gap-12` was landing between a section
+        heading and its own list. That was 68px of dead space directly under
+        "Kitchens near Lucknow", which read as a rendering fault. One element per
+        section, and it is better markup regardless.
       */}
       <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8">
         <CuisineRail />
@@ -116,9 +123,9 @@ async function Offers() {
   const offers = await PromotionService.listOffers()
   if (offers.length === 0) return null
   return (
-    <>
+    <section>
       <OffersRail offers={offers} />
-    </>
+    </section>
   )
 }
 
@@ -135,9 +142,9 @@ async function PopularDishes() {
   if (dishes.length === 0) return null
 
   return (
-    <>
+    <section>
       <DishRail dishes={dishes} title={`Popular near ${location.label}`} />
-    </>
+    </section>
   )
 }
 
@@ -152,7 +159,7 @@ async function Kitchens() {
   ])
 
   return (
-    <>
+    <section>
       <SectionHeading
         eyebrow={`${kitchens.length} cooking near you`}
         title={`Kitchens near ${location.label}`}
@@ -162,7 +169,7 @@ async function Kitchens() {
       <div className="mt-5">
         <KitchenList kitchens={kitchens} offers={offers} />
       </div>
-    </>
+    </section>
   )
 }
 
