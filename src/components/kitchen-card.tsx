@@ -114,14 +114,32 @@ export function KitchenCard({
               </p>
             )}
 
-            <div className="mt-2.5 flex items-center gap-3 border-t border-rule pt-2.5 text-xs text-ink-faint">
-              <span className="inline-flex items-center gap-1">
-                <Clock className="size-3.5" />
-                <span className="tabular">{kitchen.avg_prep_minutes} min</span>
+            {/*
+              The metadata row. Prep time and distance on the left, cost for two
+              pushed right — the layout every reference listing uses, because the
+              two answer different questions ("when" and "how far" versus "can I
+              afford it") and reading them as one run of numbers is harder.
+
+              Cost is omitted entirely when unset rather than shown as ₹0. The API
+              drops the key, so this is a genuine absence and not a zero.
+            */}
+            <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-rule pt-2.5 text-xs text-ink-faint">
+              <span className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="size-3.5" />
+                  <span className="tabular">{kitchen.avg_prep_minutes} min</span>
+                </span>
+                {distance_m !== undefined && (
+                  <span className="tabular">{formatDistance(distance_m)}</span>
+                )}
               </span>
-              {distance_m !== undefined && (
-                <span className="tabular">{formatDistance(distance_m)}</span>
-              )}
+
+              {kitchen.cost_for_two_minor !== undefined &&
+                kitchen.cost_for_two_minor > 0 && (
+                  <span className="tabular shrink-0 font-medium text-ink-soft">
+                    {formatRupees(kitchen.cost_for_two_minor)} for two
+                  </span>
+                )}
             </div>
           </div>
         </Link>

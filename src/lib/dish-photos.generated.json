@@ -198,5 +198,15 @@
     "licenceUrl": "https://creativecommons.org/licenses/by-sa/2.0",
     "author": "Laura",
     "credit": "Flickr: Indian Sweet shop"
+  },
+  "cover-biryani": {
+    "file": "/dishes/cover-biryani.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File%3ACHICKEN%20POT%20BIRYANI.jpg",
+    "width": 900,
+    "height": 527,
+    "licence": "CC BY-SA 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "author": "Chicken Pot Biryani",
+    "credit": "Own work"
   }
 }

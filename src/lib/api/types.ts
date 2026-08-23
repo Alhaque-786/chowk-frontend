@@ -172,6 +172,16 @@ export type Kitchen = {
   rating_count: number
   min_order_minor: Paise
   packaging_fee_minor: Paise
+  /**
+   * Typical spend for two people.
+   *
+   * ABSENT when the merchant has not set one — the API omits the key rather than
+   * sending 0, so a card must render nothing rather than "₹0 for two". Declared
+   * by the merchant, not derived from the menu, because a median price describes
+   * neither a kitchen selling one family biryani beside cheap breads nor a thali
+   * place where one plate feeds two.
+   */
+  cost_for_two_minor?: Paise
 }
 
 export type Menu = {

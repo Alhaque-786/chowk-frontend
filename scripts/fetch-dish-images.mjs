@@ -78,6 +78,69 @@ const WANTED = [
  */
 const WIDTH = 900
 
+/**
+ * PEXELS, when a key is available.
+ *
+ * Commons is the FALLBACK, not the preference. It is documentation photography --
+ * people photographing their dinner to illustrate an article -- so even its
+ * juried "Quality images" pool optimises for accuracy rather than appetite. The
+ * chaat kitchen's first cover was a photograph of hands holding raw peas, and
+ * that is the failure mode exactly: correct subject, useless for selling food.
+ *
+ * Pexels is professionally shot and styled, and its licence permits commercial
+ * use with no attribution required. It needs a free API key, so this activates
+ * only when PEXELS_API_KEY is set and otherwise changes nothing:
+ *
+ *     PEXELS_API_KEY=xxx node scripts/fetch-dish-images.mjs
+ *
+ * Pass slugs to replace only those. Everything downstream is untouched -- same
+ * filenames, same manifest, same attribution page -- so switching source is this
+ * one environment variable and no code change.
+ */
+const PEXELS_KEY = process.env.PEXELS_API_KEY ?? ''
+const PEXELS_API = 'https://api.pexels.com/v1/search'
+
+/**
+ * Searches Pexels, returning candidates in the SAME shape as the Commons path so
+ * that `pick` and the download loop never learn which source answered.
+ *
+ * orientation=landscape is requested server-side rather than filtered locally:
+ * asking for six results and discarding portraits can leave nothing, whereas this
+ * returns six usable ones.
+ */
+async function pexelsSearch(query) {
+  const url =
+    `${PEXELS_API}?query=${encodeURIComponent(query)}` +
+    `&per_page=6&orientation=landscape&size=medium`
+
+  const res = await fetch(url, { headers: { Authorization: PEXELS_KEY } })
+  if (!res.ok) throw new Error(`Pexels HTTP ${res.status}`)
+  const body = await res.json()
+
+  return (body.photos ?? []).map((photo) => ({
+    page: { title: photo.alt || query },
+    info: {
+      width: photo.width,
+      height: photo.height,
+      mime: 'image/jpeg',
+      // `large` is ~940px wide, close to the WIDTH the Commons path requests, so
+      // both sources yield comparably sized files.
+      thumburl: photo.src?.large,
+      url: photo.src?.original,
+      thumbwidth: 940,
+      thumbheight: Math.round((940 * photo.height) / photo.width),
+      extmetadata: {
+        LicenseShortName: { value: 'Pexels License' },
+        LicenseUrl: { value: 'https://www.pexels.com/license/' },
+        Artist: { value: photo.photographer ?? 'Unknown' },
+        Credit: { value: photo.url ?? 'pexels.com' },
+      },
+    },
+    // Overrides the Commons file page so the manifest links the real source.
+    sourcePage: photo.url,
+  }))
+}
+
 const API = 'https://commons.wikimedia.org/w/api.php'
 const UA = 'chowk-dev/1.0 (local development image seeding)'
 
@@ -132,6 +195,22 @@ async function politeFetch(url) {
  * small enough that some dishes are not in it at all.
  */
 async function search(query) {
+  if (PEXELS_KEY !== '') {
+    // Strip the Commons-only operator: `filetype:bitmap` is meaningless to Pexels
+    // and would be treated as search terms, matching nothing.
+    const cleaned = query.replace(/\s*filetype:bitmap\s*/g, ' ').trim()
+    try {
+      const photos = await pexelsSearch(cleaned)
+      if (pick(photos, 1.0)) return photos
+      console.log(`         pexels had nothing for "${cleaned}", trying Commons`)
+    } catch (err) {
+      // Caught EXPLICITLY. A rejected key fails every request, and without this
+      // the run dies with a network error that looks nothing like "your key is
+      // wrong". Falling back keeps the run useful while naming the real problem.
+      console.log(`         pexels failed (${err.message}), falling back to Commons`)
+    }
+  }
+
   const juried = await rawSearch(`${query} incategory:"Quality images"`)
   if (pick(juried)) return juried
   return rawSearch(query)
@@ -244,7 +323,9 @@ for (const { slug, search: query } of WANTED) {
     await writeFile(file, bytes)
     manifest[slug] = {
       file: `/dishes/${slug}.jpg`,
-      sourcePage: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
+      sourcePage:
+        chosen.sourcePage ??
+        `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
       width: info.thumbwidth ?? info.width,
       height: info.thumbheight ?? info.height,
       ...licenceOf(info),
@@ -261,3 +342,9 @@ for (const { slug, search: query } of WANTED) {
 
 await writeFile(MANIFEST, `${JSON.stringify(manifest, null, 2)}\n`)
 console.log(`\n${Object.keys(manifest).length} photos in the manifest.`)
+if (PEXELS_KEY === '') {
+  console.log(
+    'Source: Wikimedia Commons. Set PEXELS_API_KEY for professionally shot food\n' +
+      'photography instead -- same filenames, no other change needed.',
+  )
+}
