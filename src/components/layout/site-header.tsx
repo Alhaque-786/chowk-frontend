@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Logo } from './logo'
 import { CartButton } from './cart-button'
+import { AccountLink } from './account-link'
 
 /**
  * The site header.
@@ -28,6 +29,9 @@ export function SiteHeader() {
           <HeaderLink href="/kitchens">Kitchens</HeaderLink>
           <HeaderLink href="/offers">Offers</HeaderLink>
           <HeaderLink href="/orders">Orders</HeaderLink>
+          {/* The only session-dependent part of the header, so the only part that
+              needs to be a client island. */}
+          <AccountLink />
         </nav>
 
         <div className="ml-auto sm:ml-0">

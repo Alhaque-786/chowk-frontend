@@ -5,7 +5,7 @@ import { SectionHeading } from '@/components/ui/section-heading'
 import { Skeleton } from '@/components/ui/skeleton'
 import CatalogService from '@/services/CatalogService'
 import PromotionService from '@/services/PromotionService'
-import { getDeliveryLocation } from '@/lib/location'
+import { getDeliveryLocation } from '@/lib/location-server'
 
 /**
  * The full kitchen listing.

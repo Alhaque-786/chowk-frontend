@@ -98,6 +98,15 @@ export type AuthResponse = {
   expires_at: string
 }
 
+/**
+ * A saved delivery address.
+ *
+ * `state`, `receiver_name` and `receiver_phone` were MISSING from this type while
+ * the API has always sent them (all three `omitempty`, hence optional here). The
+ * effect was quiet rather than loud: an address form could not prefill them and an
+ * edit would have silently blanked them, because a field absent from the type is
+ * a field nobody writes code for.
+ */
 export type Address = {
   id: string
   type: 'home' | 'work' | 'other'
@@ -106,10 +115,14 @@ export type Address = {
   line2?: string
   landmark?: string
   city: string
+  state?: string
   pincode: string
   latitude: number
   longitude: number
   is_default: boolean
+  /** Who takes delivery, when it is not the account holder. */
+  receiver_name?: string
+  receiver_phone?: string
 }
 
 // ---------------------------------------------------------------------------

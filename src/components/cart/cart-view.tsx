@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, LogIn, ShoppingBag, Trash2 } from 'lucide-react'
+import { BadgeCheck, Loader2, LogIn, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CartLines, CartTotals } from './cart-lines'
+import { AddressSheet } from '@/components/account/address-sheet'
+import PromotionService from '@/services/PromotionService'
+import { cn } from '@/lib/cn'
 import { EmptyState } from '@/components/ui/empty-state'
 import { formatRupees } from '@/lib/format'
 import { requireAuth, useIsSignedIn } from '@/lib/auth-gate'
@@ -42,6 +45,24 @@ export function CartView() {
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [addingAddress, setAddingAddress] = useState(false)
+
+  /*
+    TWO pieces of coupon state, deliberately.
+
+    `coupon` is what is typed. `appliedCoupon` is what the SERVER accepted. Keeping
+    them apart is what stops a typed-but-unvalidated code being sent to checkout —
+    and it means clearing the input does not silently un-apply a working discount.
+
+    The check is advisory either way: the authoritative one happens inside the
+    checkout transaction, because a coupon's global cap can be exhausted between
+    validating it and placing the order.
+  */
+  const [coupon, setCoupon] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null)
+  const [couponNote, setCouponNote] = useState<{ ok: boolean; text: string } | null>(null)
+  const [checkingCoupon, setCheckingCoupon] = useState(false)
+
   const router = useRouter()
 
   /*
@@ -141,6 +162,53 @@ export function CartView() {
     }
   }
 
+  /**
+   * Validates a code against this cart, without applying it server-side.
+   *
+   * `POST /offers/check` is ADVISORY — it returns whether the code would work and
+   * what it would take off, and the authoritative evaluation happens inside the
+   * checkout transaction. So this stores the code and shows the expected discount;
+   * it never claims the discount has been granted.
+   *
+   * That distinction is in the copy on purpose: "the discount is calculated when
+   * you place the order" is true, whereas showing a reduced total here would be a
+   * promise this endpoint cannot make.
+   */
+  async function applyCoupon() {
+    const code = coupon.trim().toUpperCase()
+    if (code === '' || !cart?.kitchen_id) return
+
+    setCheckingCoupon(true)
+    setCouponNote(null)
+    try {
+      const result = await PromotionService.checkCode(
+        code,
+        cart.kitchen_id,
+        // The subtotal the coupon is priced against. Without it the server sees an
+        // order worth nothing and rejects every code as "cart is empty".
+        cart.subtotal_minor,
+      )
+      if (result.valid) {
+        setAppliedCoupon(result.code ?? code)
+        setCouponNote({
+          ok: true,
+          text: result.discount_minor > 0
+            ? `${formatRupees(result.discount_minor)} off with ${result.code ?? code}.`
+            : `${result.code ?? code} applied.`,
+        })
+      } else {
+        // The server's `reason` is written for customers and says WHY — "add ₹50
+        // more", "first order only". Replacing it with "invalid code" would throw
+        // away the only actionable part.
+        setCouponNote({ ok: false, text: result.reason ?? 'That code does not apply here.' })
+      }
+    } catch (err) {
+      setCouponNote({ ok: false, text: messageFor(err, 'Could not check that code.') })
+    } finally {
+      setCheckingCoupon(false)
+    }
+  }
+
   async function placeOrder() {
     if (!addressId) {
       setError('Add a delivery address first.')
@@ -154,7 +222,13 @@ export function CartView() {
       // flaky network cannot place two orders.
       const key = OrderingService.newCheckoutKey()
       const result = await OrderingService.checkout(
-        { address_id: addressId, payment_method: 'cod' },
+        {
+          address_id: addressId,
+          payment_method: 'cod',
+          // Only a code the server accepted. A typed-but-unchecked one would be
+          // rejected at checkout and lose the whole order to a typo.
+          ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
+        },
         key,
       )
       // `result.order.id`, not `result.order_id` — checkout returns the whole
@@ -211,6 +285,39 @@ export function CartView() {
 
   return (
     <div className="mt-6 flex flex-col gap-6">
+      {addingAddress && (
+        <AddressSheet
+          open
+          onOpenChange={setAddingAddress}
+          // The first address becomes the default, so the next order needs no
+          // choice at all.
+          makeDefault={addresses.length === 0}
+          onSaved={(saved) => {
+            setAddresses((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)])
+            // Selected immediately: somebody who just added an address is
+            // plainly telling you where they want this order sent.
+            setAddressId(saved.id)
+          }}
+        />
+      )}
+      {/* Mounted only while open, so the form's state resets between uses rather
+          than remembering a half-filled address from last time. */}
+      {addingAddress && (
+        <AddressSheet
+          open
+          onOpenChange={setAddingAddress}
+          // The first address becomes the default, so the next order needs no
+          // choice at all.
+          makeDefault={addresses.length === 0}
+          onSaved={(saved) => {
+            setAddresses((prev) => [saved, ...prev.filter((a) => a.id !== saved.id)])
+            // Selected immediately: somebody who just added an address is plainly
+            // telling you where they want this order sent.
+            setAddressId(saved.id)
+          }}
+        />
+      )}
+
       {/* Blockers first, before the customer invests attention in the totals. */}
       {!cart.kitchen_open && (
         <p className="rounded-xl bg-danger-soft px-3.5 py-3 text-sm text-danger" role="status">
@@ -241,13 +348,120 @@ export function CartView() {
         </div>
       </section>
 
+      {/*
+        Coupon entry.
+
+        A manual field as well as the offers list, because the two serve different
+        people: somebody who was sent a code by a friend has nothing to tap. The
+        code is uppercased on the way in — the API matches case-insensitively, but
+        showing it lowercase makes people wonder whether it took.
+      */}
       <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
-        <h2 className="font-display text-base font-bold text-ink">Deliver to</h2>
-        {addresses.length === 0 ? (
-          <p className="mt-2 text-sm text-ink-soft">
-            No saved address yet. Adding one is the next thing to build here — for
-            now an order needs an address on the account.
+        <h2 className="font-display text-base font-bold text-ink">Have a code?</h2>
+
+        {appliedCoupon ? (
+          <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-veg/10 px-3.5 py-3 ring-1 ring-veg/25">
+            <span className="flex min-w-0 items-center gap-2">
+              <BadgeCheck className="size-4 shrink-0 text-veg" aria-hidden="true" />
+              <span className="min-w-0">
+                <span className="block font-display text-sm font-bold tracking-wide text-ink">
+                  {appliedCoupon}
+                </span>
+                <span className="block text-xs text-ink-soft">
+                  Applied. The discount is calculated when you place the order.
+                </span>
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setAppliedCoupon(null)
+                setCouponNote(null)
+                setCoupon('')
+              }}
+              className="shrink-0 text-sm font-semibold text-brand hover:underline"
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              void applyCoupon()
+            }}
+          >
+            <label htmlFor="coupon" className="sr-only">
+              Coupon code
+            </label>
+            <input
+              id="coupon"
+              value={coupon}
+              onChange={(e) => {
+                setCoupon(e.target.value.toUpperCase())
+                setCouponNote(null)
+              }}
+              placeholder="WELCOME50"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              className="tabular h-11 min-w-0 flex-1 rounded-xl border border-rule-strong bg-surface px-3.5 text-sm uppercase tracking-wide text-ink outline-none transition-colors placeholder:tracking-normal placeholder:text-ink-faint focus:border-brand/50"
+            />
+            <Button
+              type="submit"
+              variant="secondary"
+              disabled={checkingCoupon || coupon.trim() === ''}
+            >
+              {checkingCoupon && <Loader2 className="size-4 animate-spin" />}
+              Apply
+            </Button>
+          </form>
+        )}
+
+        {couponNote && (
+          <p
+            className={cn(
+              'mt-2 text-sm',
+              couponNote.ok ? 'text-veg' : 'text-danger',
+            )}
+            // Announced: the customer pressed Apply and the answer appears
+            // somewhere other than where they were looking.
+            role="status"
+          >
+            {couponNote.text}
           </p>
+        )}
+      </section>
+
+      <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-base font-bold text-ink">Deliver to</h2>
+          {addresses.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setAddingAddress(true)}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:underline"
+            >
+              <Plus className="size-3.5" />
+              Add new
+            </button>
+          )}
+        </div>
+
+        {addresses.length === 0 ? (
+          <EmptyState
+            tone="plain"
+            className="px-0 py-6"
+            title="No delivery address yet"
+            body="We need somewhere to send it. This takes about twenty seconds."
+            action={
+              <Button onClick={() => setAddingAddress(true)}>
+                <Plus className="size-4" />
+                Add an address
+              </Button>
+            }
+          />
         ) : (
           <ul className="mt-3 flex flex-col gap-2">
             {addresses.map((address) => (

@@ -10,7 +10,7 @@ import { DishRail } from '@/components/home/dish-rail'
 import CatalogService from '@/services/CatalogService'
 import PromotionService from '@/services/PromotionService'
 import { SectionHeading } from '@/components/ui/section-heading'
-import { getDeliveryLocation } from '@/lib/location'
+import { getDeliveryLocation } from '@/lib/location-server'
 import { jsonLdScript, organizationJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 

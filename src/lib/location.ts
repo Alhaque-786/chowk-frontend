@@ -1,8 +1,16 @@
-import { cookies } from 'next/headers'
-import { DEFAULT_AREA, findArea, type ServingArea } from './serving-areas'
+import { DEFAULT_AREA } from './serving-areas'
 
 /**
- * The delivery point every location-aware query is centred on.
+ * The delivery location: its cookie, its encoding, and its type.
+ *
+ * PURE on purpose — no `next/headers`, so this is safe to import from a Client
+ * Component. Reading the cookie on the server lives in `location-server.ts`.
+ *
+ * The split exists because it had to. `address-sheet.tsx` is a client component
+ * and needed only the cookie NAME, but importing it from here pulled
+ * `next/headers` into the client bundle and failed the build with a
+ * server-only-module error. Server-only imports leak TRANSITIVELY: one constant
+ * shared with a client component is enough to poison the whole module.
  *
  * WHY A COOKIE. The choice has to be readable on the SERVER, because the kitchen
  * list is server-rendered — that is what makes it indexable and what keeps the
@@ -54,7 +62,7 @@ export function encodeLocation(lat: number, lng: number, label: string): string 
  * passed to the API — a NaN in a `lat` query parameter is a 400 on the most
  * important request the page makes.
  */
-function parseLocation(raw: string): DeliveryLocation | null {
+export function parseLocation(raw: string): DeliveryLocation | null {
   const parts = raw.split('|')
   if (parts.length < 3) return null
 
@@ -70,7 +78,7 @@ function parseLocation(raw: string): DeliveryLocation | null {
   return { lat, lng, label, isFallback: false }
 }
 
-function fallback(): DeliveryLocation {
+export function fallbackLocation(): DeliveryLocation {
   return {
     lat: DEFAULT_AREA.lat,
     lng: DEFAULT_AREA.lng,
@@ -79,21 +87,4 @@ function fallback(): DeliveryLocation {
   }
 }
 
-/**
- * The current delivery location. Never throws, always returns something usable.
- *
- * Falling back rather than prompting is deliberate: a first-time visitor should
- * see food immediately. Asking for a location before showing anything is the
- * most reliable way to lose someone who is only browsing.
- */
-export async function getDeliveryLocation(): Promise<DeliveryLocation> {
-  const store = await cookies()
-  const raw = store.get(LOCATION_COOKIE)?.value
-  if (!raw) return fallback()
-  return parseLocation(raw) ?? fallback()
-}
 
-/** The serving area matching a slug, for the picker's list. */
-export function areaFor(slug: string): ServingArea | undefined {
-  return findArea(slug)
-}

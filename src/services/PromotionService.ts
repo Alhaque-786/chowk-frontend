@@ -41,13 +41,28 @@ const PromotionService = {
   checkCode: async (
     code: string,
     kitchenId: string,
+    /**
+     * The cart subtotal in paise. REQUIRED, not optional.
+     *
+     * The endpoint prices the coupon against a subtotal supplied in the request —
+     * it does not read the cart. Omitting it sends 0, and the server answers
+     * "Your cart is empty" for a cart with three items in it. That is exactly what
+     * happened: every code appeared invalid because the request said the order was
+     * worth nothing.
+     *
+     * A required positional parameter rather than an optional field, so the
+     * mistake cannot be made again silently.
+     */
+    subtotalMinor: number,
     options?: CallOptions,
   ): Promise<CouponCheck> =>
     api.post<CouponCheck>(
       '/offers/check',
-      { code, kitchen_id: kitchenId },
+      { code, kitchen_id: kitchenId, subtotal_minor: subtotalMinor },
       {
-        auth: false,
+        // AUTHENTICATED: the endpoint needs the user to evaluate per-user caps and
+        // whether this is their first order. `auth: false` here made every check
+        // fail as an unauthenticated request.
         // Typed into a box by a person who is waiting: fail fast and let them
         // retype rather than making them watch a spinner for fifteen seconds.
         timeoutMs: 5_000,

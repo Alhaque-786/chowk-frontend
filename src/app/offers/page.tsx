@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { formatRupees } from '@/lib/format'
 import PromotionService from '@/services/PromotionService'
 import CatalogService from '@/services/CatalogService'
-import { getDeliveryLocation } from '@/lib/location'
+import { getDeliveryLocation } from '@/lib/location-server'
 import type { Offer } from '@/lib/api/types'
 
 /**

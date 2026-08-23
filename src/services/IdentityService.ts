@@ -9,7 +9,9 @@ import type { AuthResponse, OtpRequested, User } from '@/lib/api/types'
  * from a client component, and React `cache` is a server-only API that throws in
  * the browser.
  *
- * This service owns TOKEN PERSISTENCE as well as the calls. That pairing is
+ * This service owns TOKEN AND USER PERSISTENCE as well as the calls. The user is
+ * kept because there is no `GET /me` — the auth response is the only place the API
+ * sends it, and discarding it left an account screen with nothing to display. That pairing is
  * deliberate: a login that succeeds but does not store its tokens looks like it
  * worked and then fails on the next request, which is a miserable bug to trace.
  * Keeping `tokens.set` in the same method as the call it belongs to makes the
@@ -24,14 +26,14 @@ const IdentityService = {
     email?: string
   }): Promise<AuthResponse> => {
     const auth = await api.post<AuthResponse>('/auth/register', input, { auth: false })
-    tokens.set(auth.access_token, auth.refresh_token)
+    tokens.set(auth.access_token, auth.refresh_token, auth.user)
     return auth
   },
 
   /** Password login. */
   login: async (phone: string, password: string): Promise<AuthResponse> => {
     const auth = await api.post<AuthResponse>('/auth/login', { phone, password }, { auth: false })
-    tokens.set(auth.access_token, auth.refresh_token)
+    tokens.set(auth.access_token, auth.refresh_token, auth.user)
     return auth
   },
 
@@ -51,7 +53,7 @@ const IdentityService = {
   /** Exchanges an OTP for a session. Registers the user if they are new. */
   verifyOtp: async (phone: string, code: string): Promise<AuthResponse> => {
     const auth = await api.post<AuthResponse>('/auth/otp/verify', { phone, code }, { auth: false })
-    tokens.set(auth.access_token, auth.refresh_token)
+    tokens.set(auth.access_token, auth.refresh_token, auth.user)
     return auth
   },
 

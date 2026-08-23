@@ -6,8 +6,11 @@
  * somebody who is not looking for it inside a `fetch` wrapper.
  */
 
+import type { User } from './types'
+
 const ACCESS_KEY = 'chowk.access_token'
 const REFRESH_KEY = 'chowk.refresh_token'
+const USER_KEY = 'chowk.user'
 
 /**
  * Tokens live in localStorage.
@@ -74,11 +77,14 @@ export const tokens = {
   access: (): string | null => read(ACCESS_KEY),
   refresh: (): string | null => read(REFRESH_KEY),
 
-  set(access: string, refresh: string): void {
+  set(access: string, refresh: string, user?: User): void {
     if (typeof window === 'undefined') return
     try {
       window.localStorage.setItem(ACCESS_KEY, access)
       window.localStorage.setItem(REFRESH_KEY, refresh)
+      // Optional: a token REFRESH returns no user, and overwriting the stored one
+      // with undefined would sign the account screen out on every refresh.
+      if (user) window.localStorage.setItem(USER_KEY, JSON.stringify(user))
     } catch {
       // Nothing useful to do; the session just will not survive a reload.
     }
@@ -92,10 +98,35 @@ export const tokens = {
     try {
       window.localStorage.removeItem(ACCESS_KEY)
       window.localStorage.removeItem(REFRESH_KEY)
+      window.localStorage.removeItem(USER_KEY)
     } catch {
       /* ignore */
     }
     announce()
+  },
+
+  /**
+   * The signed-in user, as returned by the last successful auth call.
+   *
+   * Cached because there is NO `GET /me` endpoint: the only place the API sends
+   * the user is in the auth response, and it was being thrown away — so an account
+   * screen had nothing to show, not even the phone number the customer had just
+   * typed in.
+   *
+   * A cache, not a source of truth. It can go stale if the profile changes
+   * elsewhere, and it contains nothing the customer does not already know about
+   * themselves. Anything that must be current is read from the server.
+   */
+  user(): User | null {
+    const raw = read(USER_KEY)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as User
+    } catch {
+      // Corrupt or from an older shape. Treat as absent rather than throwing at
+      // whatever component happened to ask.
+      return null
+    }
   },
 
   /**
