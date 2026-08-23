@@ -294,6 +294,13 @@ export type CartLine = {
 export type Cart = {
   /** Absent on an empty cart — a cart belongs to at most one kitchen. */
   kitchen_id?: string
+  /**
+   * The kitchen's name, so a "replace your cart?" prompt can be specific.
+   *
+   * "Your cart has items from another kitchen" makes somebody go and look.
+   * "Replace your Khansama order?" is a decision they can make on the spot.
+   */
+  kitchen_name?: string
   lines: CartLine[]
   item_count: number
   subtotal_minor: Paise

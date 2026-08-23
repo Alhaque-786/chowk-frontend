@@ -45,7 +45,17 @@ const CatalogService = {
           // list -- so a broken call rendered as a plausible "nothing nearby".
           // Verified against the running API.
           `/kitchens/nearby?lat=${lat}&lng=${lng}&radius_m=${radiusM}`,
-          { auth: false, revalidate: 120, ...options },
+          /*
+            30s, not 120s.
+
+            The kitchen LIST changes rarely, which is what 120 was chosen for. But
+            the response also carries `is_open`, which is computed per request from
+            opening hours — so a kitchen that has just closed kept showing as open,
+            and kept its place in the open-first ordering, for up to two minutes.
+            Cache lifetime has to be set by the most time-sensitive field in a
+            payload, not the least.
+          */
+          { auth: false, revalidate: 30, ...options },
         )
         return result.kitchens ?? []
       } catch (err) {

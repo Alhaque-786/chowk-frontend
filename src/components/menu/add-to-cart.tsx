@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { Loader2, Plus } from 'lucide-react'
 import { QuantityStepper } from '@/components/ui/quantity-stepper'
 import { ItemSheet } from '@/components/menu/item-sheet'
+import { Sheet } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import { requireAuth } from '@/lib/auth-gate'
 import OrderingService from '@/services/OrderingService'
-import { ApiError } from '@/lib/api/errors'
+import { ApiError, messageFor } from '@/lib/api/errors'
 import { cn } from '@/lib/cn'
 import type { MenuItem } from '@/lib/api/types'
 
@@ -48,6 +50,22 @@ export function AddToCart({
   /** Dishes with options must be configured before they can be added. */
   const needsChoices = (item.modifier_groups ?? []).length > 0
   const [sheetOpen, setSheetOpen] = useState(false)
+
+  /*
+    A cart belongs to ONE kitchen, so adding from a second is refused. That is a
+    decision to offer, not an error to report — "your cart has items from another
+    kitchen" leaves the customer to work out what to do, whereas "replace your
+    Khansama order?" is answerable on the spot.
+
+    The pending add is held so Replace can retry the EXACT same request —
+    modifiers and quantity included. Asking them to configure the dish again after
+    confirming would be its own small insult.
+  */
+  const [conflict, setConflict] = useState<{
+    kitchenName: string
+    modifierIds: string[]
+    quantity: number
+  } | null>(null)
   const [quantity, setQuantity] = useState(0)
   const [lineId, setLineId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -80,31 +98,74 @@ export function AddToCart({
     setBusy(true)
     setError(null)
     try {
-      const cart = await OrderingService.addToCart({
-        kitchen_id: kitchenId,
-        menu_item_id: itemId,
-        quantity,
-        ...(modifierIds.length > 0 ? { modifier_ids: modifierIds } : {}),
-      })
-      setSheetOpen(false)
-      // Read the line back rather than assuming: the server decides how lines
-      // are merged, and `line_id` is what a later quantity change needs.
-      // Read the line back rather than assuming: the server decides how lines
-      // merge, and `line_id` is what a later quantity change needs.
-      //
-      // `findLast`, not `find`: with modifiers the same dish can occupy several
-      // lines (a half portion and a full one), and the one just added is the most
-      // recent. Picking the first would attach the stepper to a different line.
-      const line = [...cart.lines].reverse().find((l) => l.menu_item_id === itemId)
-      setQuantity(line?.quantity ?? quantity)
-      setLineId(line?.line_id ?? null)
+      await addOnce(modifierIds, quantity)
     } catch (err) {
-      setError(shortMessage(err))
-      // Left at 0 on failure. Showing a stepper for something that is not in the
-      // cart is worse than showing the add button again.
+      // A cart from another kitchen is the one failure worth offering a way out
+      // of rather than reporting. `code`, not the message text — copy changes.
+      if (err instanceof ApiError && err.code === 'DIFFERENT_KITCHEN') {
+        // Read the existing cart purely to name it. Best-effort: a failed lookup
+        // costs a specific name, never the prompt itself.
+        let kitchenName = 'another kitchen'
+        try {
+          const current = await OrderingService.getCart()
+          if (current.kitchen_name) kitchenName = current.kitchen_name
+        } catch {
+          /* keep the generic wording */
+        }
+        setSheetOpen(false)
+        setConflict({ kitchenName, modifierIds, quantity })
+        return
+      }
+      setError(messageUnderButton(err))
     } finally {
       setBusy(false)
     }
+  }
+
+  /** Replaces the cart, then retries the add that was refused. */
+  async function replaceCartAndAdd() {
+    if (!conflict) return
+    setBusy(true)
+    setError(null)
+    try {
+      await OrderingService.clearCart()
+      await addOnce(conflict.modifierIds, conflict.quantity)
+      setConflict(null)
+    } catch (err) {
+      setConflict(null)
+      setError(messageUnderButton(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /**
+   * One attempt at the add.
+   *
+   * THROWS rather than handling failure, which is the point of splitting it out:
+   * the caller decides what a failure means. `add` turns DIFFERENT_KITCHEN into a
+   * prompt, `replaceCartAndAdd` treats the same error as fatal because it has
+   * already cleared the cart and a second conflict would be a real bug.
+   */
+  async function addOnce(modifierIds: string[], quantity: number) {
+    const cart = await OrderingService.addToCart({
+      kitchen_id: kitchenId,
+      menu_item_id: itemId,
+      quantity,
+      ...(modifierIds.length > 0 ? { modifier_ids: modifierIds } : {}),
+    })
+    setSheetOpen(false)
+
+    // Read the line back rather than assuming: the server decides how lines
+    // merge, and `line_id` is what a later quantity change needs.
+    //
+    // Reversed before `find`, so this picks the LAST match: with modifiers the
+    // same dish can occupy several lines (a half portion and a full one), and the
+    // one just added is the most recent. Taking the first would attach the
+    // stepper to a different line.
+    const line = [...cart.lines].reverse().find((l) => l.menu_item_id === itemId)
+    setQuantity(line?.quantity ?? quantity)
+    setLineId(line?.line_id ?? null)
   }
 
   async function change(next: number) {
@@ -121,7 +182,7 @@ export function AddToCart({
       if (!line) setLineId(null)
     } catch (err) {
       setQuantity(previous) // Roll back, so the number never lies.
-      setError(shortMessage(err))
+      setError(messageUnderButton(err))
     } finally {
       setBusy(false)
     }
@@ -131,6 +192,42 @@ export function AddToCart({
     <div className="flex flex-col items-center gap-1">
       {/* Rendered only once opened, so a fifty-item menu does not mount fifty
           sheets it will never show. */}
+      {/*
+        The replace-cart decision. A Sheet rather than window.confirm: it can name
+        both kitchens, it is dismissible by drag on a phone, and Keep is the
+        default action because losing a cart you built is the more expensive
+        mistake of the two.
+      */}
+      {conflict && (
+        <Sheet
+          open
+          onOpenChange={(open) => { if (!open) setConflict(null) }}
+          title="Start a new cart?"
+          description={`Your cart has items from ${conflict.kitchenName}. An order can only come from one kitchen.`}
+          footer={
+            <div className="flex flex-col gap-2">
+              <Button fullWidth size="lg" disabled={busy} onClick={replaceCartAndAdd}>
+                {busy && <Loader2 className="size-4 animate-spin" />}
+                Replace with {itemName}
+              </Button>
+              <Button
+                fullWidth
+                size="lg"
+                variant="secondary"
+                onClick={() => setConflict(null)}
+              >
+                Keep my {conflict.kitchenName} cart
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-sm leading-relaxed text-ink-soft">
+            Replacing empties your current cart. Nothing has been ordered yet, so
+            nothing is charged either way.
+          </p>
+        </Sheet>
+      )}
+
       {needsChoices && sheetOpen && (
         <ItemSheet
           item={item}
@@ -182,15 +279,17 @@ export function AddToCart({
 }
 
 /**
- * Keeps the server's message when there is one, trimmed to fit under a button.
+ * The message to show under the button.
  *
- * The backend writes these for customers — "Only 2 left", "This kitchen is
- * closed" — and each implies a different next action. A generic "failed" would
- * discard the only useful part.
+ * NO LENGTH TRUNCATION. The previous version replaced anything over 60 characters
+ * with "Could not add that." — and the most common real failure here is
+ * DIFFERENT_KITCHEN, whose message is 76 characters. So the one error customers
+ * actually hit was reduced to a useless string by our own helper, while the server
+ * had written a perfectly clear explanation.
+ *
+ * The lesson generalises: truncating an error by LENGTH throws away exactly the
+ * messages that needed the length. If it does not fit, the layout is wrong.
  */
-function shortMessage(err: unknown): string {
-  if (err instanceof ApiError && err.message) {
-    return err.message.length > 60 ? 'Could not add that.' : err.message
-  }
-  return 'Could not add that.'
+function messageUnderButton(err: unknown): string {
+  return messageFor(err, 'Could not add that.')
 }
