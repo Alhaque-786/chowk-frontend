@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCallback, useSyncExternalStore } from 'react'
@@ -18,17 +19,21 @@ import { SectionHeading } from '@/components/ui/section-heading'
  * Each entry links into search, so the rail stays useful before there is enough
  * supply to justify dedicated category pages.
  */
-const CUISINES: Array<{ label: string; query: string; from: string; to: string }> = [
-  { label: 'Biryani', query: 'biryani', from: '#F5C77E', to: '#D97706' },
-  { label: 'Thali', query: 'thali', from: '#CBD9A3', to: '#7F9A4E' },
-  { label: 'Dosa', query: 'dosa', from: '#F0CBA8', to: '#C98B4B' },
-  { label: 'Kebab', query: 'kebab', from: '#E4B7B2', to: '#B5625C' },
-  { label: 'Chinese', query: 'chinese', from: '#E9A17C', to: '#C2542C' },
-  { label: 'Chaat', query: 'chaat', from: '#EFD9A0', to: '#C9A227' },
-  { label: 'Paratha', query: 'paratha', from: '#D9C7A0', to: '#A78B5A' },
-  { label: 'Sweets', query: 'sweets', from: '#E9C0D3', to: '#B45C86' },
-  { label: 'Rolls', query: 'roll', from: '#C9D8B6', to: '#6E8B4E' },
-  { label: 'Pizza', query: 'pizza', from: '#F3BFA6', to: '#C55A2B' },
+const CUISINES: Array<{ label: string; query: string; photo: string }> = [
+  { label: 'Biryani', query: 'biryani', photo: '/dishes/mutton-biryani.jpg' },
+  { label: 'Kebab', query: 'kebab', photo: '/dishes/seekh-kebab.jpg' },
+  { label: 'Thali', query: 'thali', photo: '/dishes/thali.jpg' },
+  { label: 'Tandoori', query: 'tandoori', photo: '/dishes/tandoori-platter.jpg' },
+  { label: 'Paneer', query: 'paneer', photo: '/dishes/paneer-tikka.jpg' },
+  { label: 'Dal', query: 'dal', photo: '/dishes/dal-makhani.jpg' },
+  { label: 'Breads', query: 'paratha', photo: '/dishes/naan.jpg' },
+  { label: 'Chole', query: 'chole', photo: '/dishes/chole-bhature.jpg' },
+  { label: 'Dosa', query: 'dosa', photo: '/dishes/dosa.jpg' },
+  { label: 'Curry', query: 'rogan', photo: '/dishes/rogan-josh.jpg' },
+  { label: 'Chaat', query: 'samosa', photo: '/dishes/samosa.jpg' },
+  { label: 'Sweets', query: 'gulab', photo: '/dishes/gulab-jamun.jpg' },
+  { label: 'Kheer', query: 'kheer', photo: '/dishes/kheer.jpg' },
+  { label: 'Butter Chicken', query: 'butter', photo: '/dishes/butter-chicken.jpg' },
 ]
 
 export function CuisineRail() {
@@ -101,20 +106,27 @@ export function CuisineRail() {
             <li key={cuisine.query} className="shrink-0">
               <Link
                 href={`/search?q=${cuisine.query}`}
-                className="group flex w-[4.5rem] flex-col items-center gap-2"
+                className="group flex w-[5.5rem] flex-col items-center gap-2 sm:w-[6.5rem]"
               >
-                <span
-                  className="relative grid size-[4.5rem] place-items-center overflow-hidden rounded-full transition-transform duration-200 group-hover:scale-105"
-                  style={{
-                    background: `linear-gradient(135deg, ${cuisine.from} 0%, ${cuisine.to} 100%)`,
-                  }}
-                  aria-hidden="true"
-                >
-                  <span className="relative font-display text-base font-extrabold text-white/90">
-                    {cuisine.label.slice(0, 2)}
-                  </span>
+                {/*
+                  A circular PHOTOGRAPH, which is the form both Zomato and Swiggy
+                  use for this rail. The circle is doing real work: a round crop
+                  of a plate reads as the dish at 88px, where a rectangle at that
+                  size reads as a thumbnail of something.
+                */}
+                <span className="relative size-[5.5rem] overflow-hidden rounded-full ring-1 ring-rule/60 transition-transform duration-200 group-hover:scale-105 sm:size-[6.5rem]">
+                  <Image
+                    src={cuisine.photo}
+                    alt=""
+                    fill
+                    sizes="104px"
+                    className="object-cover"
+                    // Above the fold now that the rail leads the page, so these
+                    // are LCP candidates and must not lazy-load.
+                    priority
+                  />
                 </span>
-                <span className="text-center text-xs font-medium leading-tight text-ink-soft group-hover:text-ink">
+                <span className="text-center text-xs font-semibold leading-tight text-ink-soft group-hover:text-ink sm:text-sm">
                   {cuisine.label}
                 </span>
               </Link>
