@@ -54,6 +54,20 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      {/*
+        The h1 states the query, and it is here in the STATIC part of the page
+        rather than inside the results boundary -- a page whose only h1 arrives
+        with the suspended content has no h1 at all until then.
+
+        `sr-only` because the search box directly beneath already shows the query
+        in a field the user just typed into; rendering it again as a large heading
+        is redundant on screen while still being exactly what a screen reader's
+        heading list and a crawler need.
+      */}
+      <h1 className="sr-only">
+        {query === '' ? 'Search' : `${query} near you`}
+      </h1>
+
       {/* autoFocus only when there is no query: arriving with a term already
           searched and having the keyboard cover the results is hostile. */}
       <SearchInput initialQuery={query} autoFocus={query === ''} />

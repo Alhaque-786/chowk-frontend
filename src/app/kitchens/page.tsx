@@ -50,6 +50,7 @@ async function AllKitchens() {
   return (
     <>
       <SectionHeading
+        as="h1"
         eyebrow={`${kitchens.length} delivering to ${location.label}`}
         title="All kitchens near you"
       />

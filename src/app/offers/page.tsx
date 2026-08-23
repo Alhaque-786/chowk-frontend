@@ -76,6 +76,7 @@ async function LiveOffers() {
   return (
     <>
       <SectionHeading
+        as="h1"
         eyebrow={`${offers.length} live`}
         title="Offers on right now"
       />

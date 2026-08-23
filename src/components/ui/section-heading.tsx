@@ -14,16 +14,33 @@ import { ArrowRight } from 'lucide-react'
  * `eyebrow` is the small line above. It exists so the title itself can stay
  * short: "Popular right now" as a title plus "what people near you are ordering"
  * as an eyebrow beats one long title that wraps awkwardly at every width.
+ *
+ * `as` exists because exactly ONE heading per page must be the h1, and which one
+ * depends on the page rather than on the component. The home page had NO h1 for a
+ * while: it used to live in the hero, and removing the hero took it with it, so
+ * the document opened on an h2 with nothing above it. That is invisible on screen
+ * and very visible to a crawler and a screen-reader's heading list.
+ *
+ * The listing heading is the right h1 here, and it is what both references do --
+ * Zomato's is "Best Restaurants in Gurgaon", Swiggy's is "Restaurants with online
+ * food delivery in Gurgaon". The page is a list of kitchens; that is its subject.
  */
 export function SectionHeading({
   title,
   eyebrow,
   action,
+  as: Heading = 'h2',
 }: {
   title: string
   eyebrow?: string
   /** Optional "see all" affordance, aligned to the baseline of the title. */
   action?: { href: string; label: string }
+  /**
+   * The heading level. Defaults to h2; pass 'h1' on the ONE heading that is the
+   * page's subject. Purely semantic -- the visual style is identical either way,
+   * so promoting a heading never changes the design.
+   */
+  as?: 'h1' | 'h2'
 }) {
   return (
     <div className="flex items-end justify-between gap-4">
@@ -36,9 +53,9 @@ export function SectionHeading({
             {eyebrow}
           </p>
         )}
-        <h2 className="font-display text-2xl font-extrabold tracking-[-0.02em] text-ink sm:text-[1.75rem]">
+        <Heading className="font-display text-2xl font-extrabold tracking-[-0.02em] text-ink sm:text-[1.75rem]">
           {title}
-        </h2>
+        </Heading>
       </div>
 
       {action && (

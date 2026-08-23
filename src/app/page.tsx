@@ -161,6 +161,8 @@ async function Kitchens() {
   return (
     <section>
       <SectionHeading
+        // The page's h1: this page IS a list of kitchens near you.
+        as="h1"
         eyebrow={`${kitchens.length} cooking near you`}
         title={`Kitchens near ${location.label}`}
         // Only offered when there is actually more to see than the list shows.
