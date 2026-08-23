@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { ArrowRight, ShoppingBag } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCartCount } from '@/lib/cart-store'
+import { openCart } from '@/lib/cart-ui'
 
 /**
  * The sticky cart bar.
@@ -21,9 +21,10 @@ export function CartBar() {
   const reduce = useReducedMotion()
 
   const bar = (
-    <Link
-      href="/cart"
-      className="flex items-center justify-between gap-4 rounded-xl bg-brand px-4 py-3.5 text-brand-ink shadow-lg"
+    <button
+      type="button"
+      onClick={openCart}
+      className="flex w-full items-center justify-between gap-4 rounded-xl bg-brand px-4 py-3.5 text-brand-ink shadow-lg"
     >
       <span className="flex items-center gap-2.5">
         <ShoppingBag className="size-5" />
@@ -35,7 +36,7 @@ export function CartBar() {
         Checkout
         <ArrowRight className="size-4" />
       </span>
-    </Link>
+    </button>
   )
 
   return (

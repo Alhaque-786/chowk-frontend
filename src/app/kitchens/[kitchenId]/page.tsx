@@ -4,6 +4,7 @@ import { MenuItemCard } from '@/components/menu/menu-item-card'
 import { AddToCart } from '@/components/menu/add-to-cart'
 import { MenuBrowser } from '@/components/menu/menu-browser'
 import { CategoryRail } from '@/components/menu/category-rail'
+import { EmptyState } from '@/components/ui/empty-state'
 import CatalogService from '@/services/CatalogService'
 import {
   breadcrumbJsonLd,
@@ -135,7 +136,11 @@ export default async function KitchenMenuPage({ params, searchParams }: PageProp
       */}
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {totalCount === 0 ? (
-          <EmptyMenu />
+          <EmptyState
+            className="my-8"
+            title="Nothing available right now"
+            body="Everything on this menu is sold out or off for the moment. Worth checking back a little later."
+          />
         ) : (
           <MenuBrowser
             kitchenId={kitchenId}
@@ -147,7 +152,13 @@ export default async function KitchenMenuPage({ params, searchParams }: PageProp
             kitchenOpen={menu.kitchen.is_open}
           >
           {itemCount === 0 ? (
-            <NoVegMatches />
+            // A distinct state from an empty menu: "no food" and "no vegetarian
+            // food" call for different next actions.
+            <EmptyState
+              className="my-8"
+              title="Nothing vegetarian right now"
+              body="Everything vegetarian on this menu is sold out or off for the moment. Turn off the filter to see the rest."
+            />
           ) : (
           <div className="flex gap-10 lg:gap-14">
             {/*
@@ -211,42 +222,4 @@ export default async function KitchenMenuPage({ params, searchParams }: PageProp
   )
 }
 
-/**
- * The veg filter matched nothing in a menu that does have dishes.
- *
- * A distinct state from an empty menu, and worth distinguishing: "this kitchen
- * has no food" and "this kitchen has no vegetarian food" call for different next
- * actions, and showing the first when the second is true reads as broken.
- */
-function NoVegMatches() {
-  return (
-    <div className="py-16 text-center">
-      <p className="font-display text-lg font-bold text-ink">
-        Nothing vegetarian right now
-      </p>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
-        Everything vegetarian on this menu is sold out or off for the moment. Turn
-        off the filter to see the rest.
-      </p>
-    </div>
-  )
-}
 
-/**
- * An empty menu is a real state, not an error: every dish can be sold out at
- * once. It says so plainly rather than rendering a blank page that reads as
- * broken.
- */
-function EmptyMenu() {
-  return (
-    <div className="py-16 text-center">
-      <p className="font-display text-lg font-semibold text-ink">
-        Nothing available right now
-      </p>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-ink-soft">
-        Everything on this menu is sold out or off for the moment. Worth checking
-        back a little later.
-      </p>
-    </div>
-  )
-}

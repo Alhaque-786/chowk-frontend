@@ -6,6 +6,8 @@ import { KitchenCard } from '@/components/kitchen-card'
 import { DishRail } from '@/components/home/dish-rail'
 import { SectionHeading } from '@/components/ui/section-heading'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { SearchX } from 'lucide-react'
 import SearchService from '@/services/SearchService'
 import { getDeliveryLocation } from '@/lib/location'
 
@@ -93,21 +95,20 @@ async function Results({ query }: { query: string }) {
 
   if (kitchens.length === 0 && dishes.length === 0) {
     return (
-      <div className="mt-10 rounded-2xl border border-dashed border-rule-strong px-6 py-12 text-center">
-        <p className="font-display text-lg font-bold text-ink">
-          Nothing matching “{query}”.
-        </p>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-soft">
-          We only search kitchens that deliver to {location.label}, and we match
-          on exact spelling — so a near-miss finds nothing. Try a shorter word.
-        </p>
-        <Link
-          href="/kitchens"
-          className="mt-5 inline-block text-sm font-semibold text-brand hover:underline"
-        >
-          See every kitchen instead →
-        </Link>
-      </div>
+      <EmptyState
+        className="mt-10"
+        icon={SearchX}
+        title={`Nothing matching “${query}”`}
+        body={`We only search kitchens that deliver to ${location.label}, and we match on exact spelling — so a near miss finds nothing. Try a shorter word.`}
+        action={
+          <Link
+            href="/kitchens"
+            className="text-sm font-semibold text-brand hover:underline"
+          >
+            See every kitchen instead →
+          </Link>
+        }
+      />
     )
   }
 

@@ -6,6 +6,7 @@ import { MenuToolbar } from './menu-toolbar'
 import { CategoryRail } from './category-rail'
 import { MenuItemCard } from './menu-item-card'
 import { AddToCart } from './add-to-cart'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { MenuItem } from '@/lib/api/types'
 
 /**
@@ -107,16 +108,14 @@ export function MenuBrowser({
           </p>
 
           {results.length === 0 ? (
-            <div className="mt-8 flex flex-col items-center gap-2 text-center">
-              <SearchX className="size-7 text-ink-faint" aria-hidden="true" />
-              <p className="font-display text-base font-bold text-ink">
-                Not on this menu
-              </p>
-              <p className="max-w-xs text-sm leading-relaxed text-ink-soft">
-                Clear the search to see everything, or try a shorter word — this
-                matches on spelling, so a near miss finds nothing.
-              </p>
-            </div>
+            <EmptyState
+              // `plain`: this sits inside the menu column, and a dashed box here
+              // would be a box inside a box.
+              tone="plain"
+              icon={SearchX}
+              title="Not on this menu"
+              body="Clear the search to see everything, or try a shorter word — this matches on spelling, so a near miss finds nothing."
+            />
           ) : (
             <div className="mt-2">
               {results.map((item) => (

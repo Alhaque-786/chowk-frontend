@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Tag } from 'lucide-react'
+import { Tag, TicketX } from 'lucide-react'
 import { SectionHeading } from '@/components/ui/section-heading'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatRupees } from '@/lib/format'
 import PromotionService from '@/services/PromotionService'
@@ -54,21 +55,20 @@ async function LiveOffers() {
     return (
       <>
         <SectionHeading eyebrow="Live deals" title="Offers on right now" />
-        <div className="mt-6 rounded-2xl border border-dashed border-rule-strong px-6 py-12 text-center">
-          <p className="font-display text-lg font-bold text-ink">
-            No offers running today.
-          </p>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
-            We would rather show you nothing than an expired code. Prices here are
-            already lower than the big apps because kitchens pay us less.
-          </p>
-          <Link
-            href="/kitchens"
-            className="mt-5 inline-block text-sm font-semibold text-brand hover:underline"
-          >
-            Browse kitchens instead →
-          </Link>
-        </div>
+        <EmptyState
+          className="mt-6"
+          icon={TicketX}
+          title="No offers running today"
+          body="We would rather show you nothing than an expired code. Prices here are already lower than the big apps, because kitchens pay us less."
+          action={
+            <Link
+              href="/kitchens"
+              className="text-sm font-semibold text-brand hover:underline"
+            >
+              Browse kitchens instead →
+            </Link>
+          }
+        />
       </>
     )
   }

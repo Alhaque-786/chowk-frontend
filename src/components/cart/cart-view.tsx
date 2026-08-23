@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Loader2, ShoppingBag, Trash2 } from 'lucide-react'
+import { Loader2, LogIn, ShoppingBag, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { QuantityStepper } from '@/components/ui/quantity-stepper'
+import { CartLines, CartTotals } from './cart-lines'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatRupees } from '@/lib/format'
 import { requireAuth, useIsSignedIn } from '@/lib/auth-gate'
 import { messageFor } from '@/lib/api/errors'
@@ -174,30 +175,35 @@ export function CartView() {
 
   if (!signedIn) {
     return (
-      <Panel
+      <EmptyState
+        className="mt-6"
+        icon={LogIn}
         title="Sign in to see your cart"
         body="Your cart lives with your account, so it is waiting for you on any device."
-      >
-        {/* No local flag to clear: signing in fires a session change, the hook
-            re-reads it, and this whole branch stops rendering. */}
-        <Button onClick={() => void requireAuth('Sign in to see your cart.')}>
-          Sign in
-        </Button>
-      </Panel>
+        action={
+          // No local flag to clear: signing in fires a session change, the hook
+          // re-reads it, and this whole branch stops rendering.
+          <Button onClick={() => void requireAuth('Sign in to see your cart.')}>
+            Sign in
+          </Button>
+        }
+      />
     )
   }
 
   if (!cart || cart.lines.length === 0) {
     return (
-      <Panel
+      <EmptyState
+        className="mt-6"
+        icon={ShoppingBag}
         title="Your cart is empty"
         body="Nothing in here yet. Pick a kitchen and add something you actually want to eat."
-        icon
-      >
-        <Link href="/kitchens">
-          <Button>Browse kitchens</Button>
-        </Link>
-      </Panel>
+        action={
+          <Link href="/kitchens">
+            <Button>Browse kitchens</Button>
+          </Link>
+        }
+      />
     )
   }
 
@@ -220,54 +226,7 @@ export function CartView() {
       )}
 
       <section className="rounded-2xl bg-surface shadow-sm ring-1 ring-rule/70">
-        <ul>
-          {cart.lines.map((line) => (
-            <li
-              key={line.line_id}
-              className="flex items-start gap-4 border-b border-rule-soft p-4 last:border-b-0"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-display text-[1.0625rem] font-semibold leading-snug text-ink">
-                  {line.name}
-                </p>
-
-                {/* What they actually chose. Without this the customer cannot
-                    tell a half portion from a full one in their own cart. */}
-                {line.modifiers && line.modifiers.length > 0 && (
-                  <p className="mt-0.5 text-xs leading-snug text-ink-soft">
-                    {line.modifiers.join(' · ')}
-                  </p>
-                )}
-
-                {/*
-                  Derived from the LINE TOTAL, not from `unit_price_minor`.
-                  unit_price_minor is the base price and excludes modifiers, so
-                  showing it reads as "₹389 each" beside a ₹1,058 line total and
-                  makes the arithmetic look broken. This is the number the
-                  customer is actually paying per item.
-                */}
-                <p className="tabular mt-0.5 text-sm text-ink-soft">
-                  {formatRupees(Math.round(line.line_total_minor / line.quantity))} each
-                </p>
-                {!line.is_available && (
-                  <p className="mt-1 text-xs font-medium text-danger">Sold out</p>
-                )}
-              </div>
-
-              <div className="flex flex-col items-end gap-2">
-                <QuantityStepper
-                  quantity={line.quantity}
-                  onChange={(n) => changeQuantity(line.line_id, n)}
-                  disabled={busy}
-                  itemName={line.name}
-                />
-                <span className="tabular text-sm font-semibold text-ink">
-                  {formatRupees(line.line_total_minor)}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <CartLines cart={cart} onQuantityChange={changeQuantity} busy={busy} />
       </section>
 
       <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
@@ -277,18 +236,9 @@ export function CartView() {
           makes ("no surprise fees at the end"). A collapsed "taxes and charges"
           row is the pattern that promise exists to reject.
         */}
-        <dl className="mt-3 flex flex-col gap-1.5 text-sm">
-          <Row label="Item total" value={cart.subtotal_minor} />
-          <Row label="Packaging" value={cart.packaging_fee_minor} />
-          <Row label="Delivery" value={cart.delivery_fee_minor} />
-          <Row label="GST" value={cart.tax_minor} />
-          <div className="mt-1.5 flex items-baseline justify-between border-t border-rule pt-2.5">
-            <dt className="font-display font-bold text-ink">To pay</dt>
-            <dd className="tabular font-display text-lg font-bold text-ink">
-              {formatRupees(cart.total_minor)}
-            </dd>
-          </div>
-        </dl>
+        <div className="mt-3">
+          <CartTotals cart={cart} />
+        </div>
       </section>
 
       <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
@@ -358,35 +308,7 @@ export function CartView() {
   )
 }
 
-function Row({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-baseline justify-between">
-      <dt className="text-ink-soft">{label}</dt>
-      <dd className="tabular text-ink">{value === 0 ? 'Free' : formatRupees(value)}</dd>
-    </div>
-  )
-}
 
-function Panel({
-  title,
-  body,
-  icon,
-  children,
-}: {
-  title: string
-  body: string
-  icon?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="mt-6 rounded-2xl border border-dashed border-rule-strong px-6 py-12 text-center">
-      {icon && <ShoppingBag className="mx-auto size-7 text-ink-faint" aria-hidden="true" />}
-      <p className="mt-3 font-display text-lg font-bold text-ink">{title}</p>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">{body}</p>
-      <div className="mt-5 flex justify-center">{children}</div>
-    </div>
-  )
-}
 
 function CartSkeleton() {
   return (

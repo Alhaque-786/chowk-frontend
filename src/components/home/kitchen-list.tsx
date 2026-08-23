@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { KitchenCard } from '@/components/kitchen-card'
 import { buildOfferIndex } from '@/lib/offer-index'
+import { EmptyState } from '@/components/ui/empty-state'
+import { MapPinOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FilterChips, type Filter } from './filter-chips'
 import type { NearbyKitchen, Offer } from '@/lib/api/types'
@@ -45,7 +47,20 @@ export function KitchenList({
     return [...list].sort((a, b) => Number(b.is_open) - Number(a.is_open))
   }, [kitchens, filters])
 
-  if (kitchens.length === 0) return <EmptyState />
+  if (kitchens.length === 0) {
+    return (
+      <EmptyState
+        icon={MapPinOff}
+        title="No kitchens here yet"
+        body="We are only in Lucknow so far. Change your location, or check back — this is supply, not interest."
+        action={
+          <Link href="/partner">
+            <Button variant="secondary">Know a kitchen? Tell them</Button>
+          </Link>
+        }
+      />
+    )
+  }
 
   return (
     <div>
@@ -56,21 +71,16 @@ export function KitchenList({
       />
 
       {visible.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-rule-strong px-6 py-10 text-center">
-          <p className="font-display text-base font-semibold text-ink">
-            Nothing matches those filters
-          </p>
-          <p className="mt-1.5 text-sm text-ink-soft">
-            Try removing one to see more kitchens.
-          </p>
-          <Button
-            variant="secondary"
-            className="mt-4"
-            onClick={() => setFilters(new Set())}
-          >
-            Clear filters
-          </Button>
-        </div>
+        <EmptyState
+          className="mt-6"
+          title="Nothing matches those filters"
+          body="Every kitchen was filtered out. Removing one will bring some back."
+          action={
+            <Button variant="secondary" onClick={() => setFilters(new Set())}>
+              Clear filters
+            </Button>
+          }
+        />
       ) : (
         <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((kitchen, i) => (
@@ -93,19 +103,3 @@ export function KitchenList({
  * The genuine state of a new marketplace, so it is written as a real screen
  * rather than treated as an edge case.
  */
-function EmptyState() {
-  return (
-    <div className="rounded-2xl border border-dashed border-rule-strong px-6 py-14 text-center">
-      <p className="font-display text-lg font-bold text-ink">
-        No kitchens here yet
-      </p>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-soft">
-        We are signing up kitchens in your area now. If you run one, listing takes
-        about ten minutes and we charge a fraction of what the big apps do.
-      </p>
-      <Link href="/partner" className="mt-5 inline-block">
-        <Button>List your kitchen</Button>
-      </Link>
-    </div>
-  )
-}

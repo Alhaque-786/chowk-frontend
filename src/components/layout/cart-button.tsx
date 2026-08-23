@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useCartCount } from '@/lib/cart-store'
+import { openCart } from '@/lib/cart-ui'
 
 /**
  * The cart entry point, with a live item count.
@@ -9,13 +9,18 @@ import { useCartCount } from '@/lib/cart-store'
  * A Client Component because the count changes without navigation. It is
  * deliberately the ONLY client island in the header — isolating it keeps the nav
  * and logo on the server.
+ *
+ * Opens the drawer rather than navigating to /cart. Checking the cart is something
+ * people do repeatedly mid-order, and a navigation costs them their scroll
+ * position on the menu every time.
  */
 export function CartButton() {
   const count = useCartCount()
 
   return (
-    <Link
-      href="/cart"
+    <button
+      type="button"
+      onClick={openCart}
       className="relative inline-flex min-h-10 items-center gap-2 rounded-xl border border-rule-strong bg-surface px-3 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk"
       // The count is in the accessible name, so a screen reader hears "Cart, 3
       // items" rather than reading the badge as a stray number.
@@ -31,7 +36,7 @@ export function CartButton() {
           {count > 99 ? '99+' : count}
         </span>
       )}
-    </Link>
+    </button>
   )
 }
 

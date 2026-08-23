@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, Loader2, PackageX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 import { formatRupees } from '@/lib/format'
 import { messageFor } from '@/lib/api/errors'
 import OrderingService from '@/services/OrderingService'
@@ -133,15 +134,19 @@ export function OrderView({ orderId }: { orderId: string }) {
 
   if (!order) {
     return (
-      <div className="rounded-2xl border border-dashed border-rule-strong px-6 py-12 text-center">
-        <p className="font-display text-lg font-bold text-ink">Order not found</p>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-soft">
-          {error ?? 'We could not find that order on your account.'}
-        </p>
-        <Link href="/kitchens" className="mt-5 inline-block text-sm font-semibold text-brand hover:underline">
-          Browse kitchens →
-        </Link>
-      </div>
+      <EmptyState
+        icon={PackageX}
+        title="Order not found"
+        body={error ?? 'We could not find that order on your account.'}
+        action={
+          <Link
+            href="/kitchens"
+            className="text-sm font-semibold text-brand hover:underline"
+          >
+            Browse kitchens →
+          </Link>
+        }
+      />
     )
   }
 
