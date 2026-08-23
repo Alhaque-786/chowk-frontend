@@ -305,3 +305,62 @@ h1, h2, h3 {
     animation: none;
   }
 }
+
+/* ===========================================================================
+   FEEDBACK
+
+   The difference between an app that works and one people enjoy using is almost
+   entirely here: whether an action feels acknowledged. These are the three
+   moments that matter in an ordering flow — something entered the cart, a number
+   changed, an image arrived — and each gets the smallest gesture that reads as
+   deliberate.
+
+   Every one is disabled under prefers-reduced-motion at the bottom of this block.
+   A spring that delights most people is a vestibular problem for some, and an
+   ordering app is not the place to make that trade.
+   =========================================================================== */
+
+/* A single overshoot, then settle. Used when the Add button becomes a stepper:
+   the control CHANGED, and a 180ms pop is what says so without a toast, a
+   notification, or anything else the customer has to dismiss. */
+@keyframes pop-in {
+  0%   { transform: scale(0.86); opacity: 0; }
+  60%  { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.pop-in {
+  animation: pop-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The cart badge, when the count changes. Deliberately smaller than the stepper's
+   pop — it is peripheral, and a badge that leaps every time you add a samosa
+   becomes the thing you look at instead of the food. */
+@keyframes badge-bump {
+  0%, 100% { transform: scale(1); }
+  40%      { transform: scale(1.22); }
+}
+
+.badge-bump {
+  animation: badge-bump 260ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+/* Images arrive by fading rather than snapping in.
+
+   Paired with a tinted placeholder underneath, so the space is never empty and
+   never white: a hard swap from white to a dark photograph is the flash that
+   makes a fast page feel cheap. */
+@keyframes fade-up {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.img-fade {
+  animation: fade-up 320ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-in, .badge-bump, .img-fade {
+    animation: none;
+  }
+}

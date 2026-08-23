@@ -61,15 +61,24 @@ export function DishImage({
   priority?: boolean
 }) {
   if (src) {
+    const [from, to] = paletteFor(name)
     return (
-      <div className={cn('relative overflow-hidden bg-surface-sunk', className)}>
+      <div
+        className={cn('relative overflow-hidden', className)}
+        // The SAME gradient this dish would get as a fallback, used as the
+        // placeholder underneath. So the space is never empty and never white,
+        // and the photo fades onto a colour already in its own family rather than
+        // flashing from white to a dark plate — which is the transition that makes
+        // a fast page feel cheap.
+        style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
+      >
         <Image
           src={src}
           alt={name}
           fill
           sizes={sizes}
           priority={priority}
-          className="object-cover"
+          className="img-fade object-cover"
         />
         {/* A gentle bottom scrim, so overlaid text stays legible on any photo
             without dimming the food itself. */}

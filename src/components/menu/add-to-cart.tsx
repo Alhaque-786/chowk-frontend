@@ -159,12 +159,17 @@ export function AddToCart({
           Add
         </button>
       ) : (
-        <QuantityStepper
-          quantity={quantity}
-          onChange={change}
-          disabled={busy}
-          itemName={itemName}
-        />
+        // `pop-in` fires once, when the Add button becomes a stepper. That is
+        // the moment something entered the cart, and a 220ms overshoot says so
+        // without a toast the customer then has to dismiss.
+        <div className="pop-in">
+          <QuantityStepper
+            quantity={quantity}
+            onChange={change}
+            disabled={busy}
+            itemName={itemName}
+          />
+        </div>
       )}
 
       {error && (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { useCartCount } from '@/lib/cart-store'
 import { openCart } from '@/lib/cart-ui'
 
@@ -17,6 +18,22 @@ import { openCart } from '@/lib/cart-ui'
 export function CartButton() {
   const count = useCartCount()
 
+  /*
+    Bumps the badge when the count CHANGES — not on mount.
+
+    Keyed on the previous value rather than a boolean, because the animation has
+    to restart for a second change in quick succession. Re-keying the element is
+    what makes CSS replay the keyframes; toggling a class does nothing if the
+    class is already there.
+  */
+  const previous = useRef(count)
+  const [bumpKey, setBumpKey] = useState(0)
+
+  useEffect(() => {
+    if (previous.current !== count && count > 0) setBumpKey((k) => k + 1)
+    previous.current = count
+  }, [count])
+
   return (
     <button
       type="button"
@@ -30,7 +47,10 @@ export function CartButton() {
       <span className="hidden sm:inline">Cart</span>
       {count > 0 && (
         <span
-          className="grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[0.6875rem] font-semibold text-brand-ink tabular"
+          key={bumpKey}
+          className="badge-bump grid min-w-5 place-items-center rounded-full bg-brand px-1 text-[0.6875rem] font-semibold text-brand-ink tabular"
+          // Decorative: the count is already in the button's accessible name, so
+          // announcing it twice would be noise.
           aria-hidden="true"
         >
           {count > 99 ? '99+' : count}
