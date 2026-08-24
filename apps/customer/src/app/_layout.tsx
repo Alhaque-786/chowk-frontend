@@ -3,6 +3,7 @@ import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { ReduceMotion, ReducedMotionConfig } from 'react-native-reanimated'
 
+import { c } from '@/theme'
 import { queryClient } from '@/lib/query'
 
 /**
@@ -42,7 +43,7 @@ export default function RootLayout() {
           // The screen draws its own header, so the navigator's is off. Turning it
           // on later is one line; undoing a double header is confusing.
           headerShown: false,
-          contentStyle: { backgroundColor: '#FAF6EF' },
+          contentStyle: { backgroundColor: c.ground },
         }}
       />
     </QueryClientProvider>

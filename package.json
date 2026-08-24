@@ -6,10 +6,13 @@
     "packages/*"
   ],
   "scripts": {
-    "web": "npm run dev --workspace=web",
+    "check": "npm run check:tokens && npm run typecheck && npm run lint",
+    "check:tokens": "npm run check --workspace=@chowk/tokens",
     "customer": "npm run start --workspace=customer",
+    "lint": "npm run lint --workspaces --if-present",
+    "tokens": "npm run generate --workspace=@chowk/tokens",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present"
+    "web": "npm run dev --workspace=web"
   },
   "engines": {
     "node": ">=22"

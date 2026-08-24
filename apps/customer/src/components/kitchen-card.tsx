@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated'
 
 import { PressableCard } from './pressable-card'
 import { assetUrl } from '@/lib/api-host'
-import { c, radius, s, shadow } from '@/theme'
+import { c, gradients, radius, s, shadow } from '@/theme'
 import type { Kitchen } from '@/lib/types'
 
 /**
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   // A warm tone underneath, so the slot is never white while the photo decodes.
   // A hard swap from white to a dark photograph is the flash that makes an
   // otherwise fast list feel cheap.
-  imageWrap: { width: '100%', height: 168, backgroundColor: '#E8A44C' },
+  imageWrap: { width: '100%', height: 168, backgroundColor: gradients.imagePlaceholder },
   image: { width: '100%', height: '100%' },
   closedVeil: {
     position: 'absolute',

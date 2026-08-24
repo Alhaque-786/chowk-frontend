@@ -1,0 +1,18 @@
+{
+  "name": "@chowk/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The design tokens. One source of truth for web, customer app and driver app.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "node --experimental-strip-types --no-warnings bin/generate.ts",
+    "check": "node --experimental-strip-types --no-warnings bin/generate.ts --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

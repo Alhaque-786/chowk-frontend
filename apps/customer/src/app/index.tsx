@@ -22,7 +22,7 @@ import { SearchField } from '@/components/search-field'
 import { apiGet } from '@/lib/api'
 import { API_BASE_URL, describeApiHost } from '@/lib/api-host'
 import type { Kitchen } from '@/lib/types'
-import { c, radius, s, shadow } from '@/theme'
+import { c, gradients, radius, s, shadow } from '@/theme'
 
 /**
  * Kitchens near you — the home screen.
@@ -205,7 +205,9 @@ export default function KitchensScreen() {
         ]}
       >
         <LinearGradient
-          colors={['#E9963C', '#D2622C', '#B84B2A']}
+          // Shared with web, so the two heroes are the same surface rather than two
+          // warm gradients that merely resemble each other.
+          colors={gradients.hero}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -276,8 +278,8 @@ export default function KitchensScreen() {
             refreshing={isRefetching}
             onRefresh={() => void refetch()}
             // White, because at the moment you pull, the spinner is over the banner.
-            tintColor="#FFFFFF"
-            progressBackgroundColor="#FFFFFF"
+            tintColor={c.surface}
+            progressBackgroundColor={c.surface}
           />
         }
       />
@@ -390,7 +392,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: s.lg,
   },
-  locationLabel: { fontSize: 15, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.2 },
+  locationLabel: { fontSize: 15, fontWeight: '800', color: c.brandInk, letterSpacing: -0.2 },
   locationCity: { fontSize: 13, color: 'rgba(255,255,255,0.82)' },
 
   greeting: {
@@ -398,7 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: s.lg,
     fontSize: 30,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: c.brandInk,
     letterSpacing: -0.8,
   },
   tagline: {

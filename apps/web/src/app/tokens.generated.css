@@ -1,0 +1,109 @@
+/* GENERATED FILE — DO NOT EDIT.
+ *
+ * Source:    packages/tokens/src/index.ts
+ * Regenerate: npm run generate --workspace=@chowk/tokens
+ * Verify:     npm run check --workspace=@chowk/tokens
+ *
+ * Every value here is shared with the customer app and the driver app. Editing
+ * this file changes web only, which is how the palette drifted apart the first
+ * time. Edit the source and regenerate.
+ */
+
+:root {
+  /* Set explicitly so the browser paints form controls, scrollbars and autofill
+     in light regardless of the OS setting. Without it, a customer in system-dark
+     gets dark native inputs on a cream page. */
+  color-scheme: light;
+
+  --ground: #faf6ef;
+  --surface: #ffffff;
+  --surface-sunk: #f2ede3;
+  --surface-raised: #ffffff;
+  --ink: #1c1917;
+  --ink-soft: #57534e;
+  --ink-faint: #8c837a;
+  --ink-inverse: #fbf9f5;
+  --rule: #ebe4d8;
+  --rule-strong: #d6cdbc;
+  --brand: #2f3f7a;
+  --brand-hover: #263462;
+  --brand-soft: #e7eaf4;
+  --brand-ink: #ffffff;
+  --veg: #1f7a4d;
+  --non-veg: #a6342b;
+  --egg: #b8860b;
+  --on-veg: #ffffff;
+  --on-warning: #ffffff;
+  --success: #1f7a4d;
+  --warning: #a1620a;
+  --danger: #a6342b;
+  --danger-soft: #fbebe9;
+  --accent: #c2542c;
+  --accent-soft: #fbeee6;
+
+  --gradient-hero: linear-gradient(160deg, #e9963c, #d2622c, #b84b2a);
+  --image-placeholder: #e8a44c;
+
+  --corner-xs: 0.375rem;
+  --corner-sm: 0.5rem;
+  --corner-md: 0.75rem;
+  --corner-lg: 1rem;
+  --corner-xl: 1.25rem;
+  --corner-xxl: 1.75rem;
+  --corner-full: 9999px;
+
+  --elev-sm: 0 1px 2px rgb(74 56 32 / 0.06);
+  --elev-base: 0 1px 2px rgb(74 56 32 / 0.05), 0 4px 8px -2px rgb(74 56 32 / 0.06), 0 12px 24px -8px rgb(74 56 32 / 0.10);
+  --elev-lg: 0 2px 4px rgb(74 56 32 / 0.05), 0 8px 16px -4px rgb(74 56 32 / 0.08), 0 24px 48px -12px rgb(74 56 32 / 0.16);
+  --elev-brand: 0 8px 24px -8px rgb(47 63 122 / 0.35);
+  --elev-float: 0 4px 8px rgb(74 56 32 / 0.06), 0 16px 32px -8px rgb(74 56 32 / 0.12), 0 48px 80px -24px rgb(74 56 32 / 0.28);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 160ms;
+  --duration-base: 260ms;
+  --duration-slow: 420ms;
+}
+
+/* Tailwind v4 is CSS-first: @theme maps tokens onto utility names, so
+   `bg-surface` and `text-ink-soft` work without a JS config file. */
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-ink: var(--brand-ink);
+  --color-veg: var(--veg);
+  --color-non-veg: var(--non-veg);
+  --color-egg: var(--egg);
+  --color-on-veg: var(--on-veg);
+  --color-on-warning: var(--on-warning);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --radius-sm: var(--corner-xs);
+  --radius-md: var(--corner-sm);
+  --radius-lg: var(--corner-md);
+  --radius-xl: var(--corner-lg);
+  --radius-2xl: var(--corner-xl);
+  --radius-3xl: var(--corner-xxl);
+  --radius-full: var(--corner-full);
+
+  --shadow-sm: var(--elev-sm);
+  --shadow-md: var(--elev-base);
+  --shadow-lg: var(--elev-lg);
+  --shadow-brand: var(--elev-brand);
+  --shadow-float: var(--elev-float);
+}

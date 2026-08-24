@@ -90,7 +90,7 @@ export function KitchenListSkeleton() {
 }
 
 const styles = StyleSheet.create({
-  base: { backgroundColor: c.sunk, overflow: 'hidden', borderRadius: radius.sm },
+  base: { backgroundColor: c.surfaceSunk, overflow: 'hidden', borderRadius: radius.sm },
   list: { paddingHorizontal: 16, gap: 14 },
   card: {
     backgroundColor: c.surface,
