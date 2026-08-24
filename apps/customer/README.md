@@ -1,56 +1,77 @@
-# Welcome to your Expo app 👋
+# Chowk — customer app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo + React Native, part of the `frontend` workspace.
 
-## Get started
+## Run it
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+The Go API must be running first (`cd ../../backend && make dev`).
 
 ```bash
-npm run reset-project
+# from the repo root
+npm run customer          # then press i for iOS, or scan the QR with Expo Go
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Testing on a real phone — no Android SDK needed
 
-### Other setup steps
+This is the fastest path, and the one to use for Android:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. Install **Expo Go** from the Play Store (or App Store).
+2. Put the phone on the **same wifi** as this Mac.
+3. `npm run customer` and scan the QR code.
 
-## Learn more
+That is it. No Android Studio, no SDK, no emulator. The app discovers this Mac's
+LAN address from the Expo packager, so the API resolves without editing anything —
+see `src/lib/api-host.ts`.
 
-To learn more about developing your project with Expo, look at the following resources:
+**If requests fail**, the app prints the URL it tried on screen. Check in order:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+| Symptom | Cause |
+| --- | --- |
+| `Network request failed` on a phone | Phone is on mobile data, not the wifi |
+| Works on simulator, fails on phone | Same — or the Mac's firewall is blocking :8080 |
+| Photos missing, data fine | The web app on :3000 is not running; it serves the images |
 
-## Join the community
+## Where the pieces are
 
-Join our community of developers creating universal apps.
+```
+src/app/          expo-router routes. File-based, like the Next.js App Router:
+                    index.tsx        →  /
+                    _layout.tsx      →  the root Stack
+src/lib/          api-host.ts — per-platform API and asset URLs
+metro.config.js   monorepo resolution. Do not delete; see the comments inside.
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Android emulator, when you actually want one
+
+Only needed to test Android without a physical device. It is a ~1.2GB install:
+
+```bash
+brew install --cask android-studio
+```
+
+Then in Android Studio: **More Actions → SDK Manager**, install the latest SDK
+platform and build tools, and create a device under **Device Manager**. Add to
+`~/.zshrc`:
+
+```bash
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17"
+```
+
+Expo Go on a real phone covers most of what an emulator would, so this is
+deliberately deferred rather than set up in advance.
+
+## What Expo Go cannot do
+
+Expo Go runs a fixed set of native modules. The moment the app needs one it does
+not bundle — a payment SDK, background location for the rider app — you switch to
+a **development build**:
+
+```bash
+npx expo run:ios        # needs Xcode, already installed
+npx expo run:android    # needs the Android SDK above
+```
+
+Same workflow afterwards, and it is worth knowing this cliff exists before hitting
+it mid-feature: Razorpay and background location will both require it.
