@@ -65,6 +65,35 @@ jobs:
       # from the root, and `npm ci --workspace=web` would still need the root tree.
       - run: npm ci
 
+      # ---------------------------------------------------------------------
+      # THE TOKEN GUARD, and it belongs here rather than in its own job.
+      #
+      # packages/tokens is the single source of the palette for web, the customer
+      # app and (later) the driver app. apps/web/src/app/tokens.generated.css is
+      # generated FROM it and checked in, so the web app needs no build step — and
+      # a checked-in generated file is only a single source of truth for as long as
+      # somebody remembers to regenerate it.
+      #
+      # It runs in the web job because the `web` filter above already matches
+      # exactly the two paths that can make the file stale: `packages/**` (the
+      # source changed) and `apps/web/**` (the generated file was hand-edited).
+      # A separate job would need a third `npm ci` — about 40 seconds — to run two
+      # commands that take under one.
+      #
+      # FIRST, before typecheck and build, so a stale palette fails in seconds
+      # instead of after a full Next.js compile.
+      #
+      # The package's own typecheck is here too, because nothing else covers it:
+      # apps/web imports src/index.ts so TypeScript checks that transitively, but
+      # src/css.ts and bin/generate.ts are imported by neither app. A broken
+      # generator would have gone unnoticed until someone ran it by hand.
+      # ---------------------------------------------------------------------
+      - name: Tokens — typecheck the source
+        run: npm run typecheck --workspace=@chowk/tokens
+
+      - name: Tokens — generated CSS is current
+        run: npm run check --workspace=@chowk/tokens
+
       - name: Typecheck
         run: npm run typecheck --workspace=web
 
