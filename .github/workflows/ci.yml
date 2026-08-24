@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+
+# Cancel superseded runs on the same branch. Pushing three times in a minute
+# otherwise queues three full pipelines, and the first two are already irrelevant.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # THE MONOREPO PIECE.
+  #
+  # This job decides which apps a commit actually touched, and the jobs below run
+  # only if their app changed. Without it, editing one line in the mobile app runs
+  # the full Next.js build — and a CI that punishes you for touching an unrelated
+  # app is a CI people start skipping.
+  #
+  # Note `packages/**` appears in BOTH filters. Shared code affects both apps, so
+  # changing it must run both. That is the whole reason this cannot be inferred
+  # from the directory name alone.
+  # ---------------------------------------------------------------------------
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      customer: ${{ steps.filter.outputs.customer }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+            customer:
+              - 'apps/customer/**'
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+
+  web:
+    name: Web — typecheck, lint, build
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          # Caches from the ROOT lockfile, which is the only one in a workspace.
+          cache: npm
+
+      # Installs the whole workspace, not just apps/web. npm workspaces resolve
+      # from the root, and `npm ci --workspace=web` would still need the root tree.
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck --workspace=web
+
+      # --max-warnings=0 on purpose. A warning nobody has to fix becomes a warning
+      # nobody reads, and then an error hides among forty of them.
+      - name: Lint
+        run: npm run lint --workspace=web
+
+      - name: Build
+        run: npm run build --workspace=web
+
+  customer:
+    name: Customer app — typecheck, lint
+    needs: changes
+    if: needs.changes.outputs.customer == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck --workspace=customer
+
+      - name: Lint
+        run: npm run lint --workspace=customer
+
+      # NO native build here, deliberately. Compiling an iOS or Android binary
+      # needs a macOS runner or the Android SDK and takes 15+ minutes — that
+      # belongs on a release trigger, via EAS Build, not on every push.
+
+  # Branch protection can require this single check instead of listing every job,
+  # which means adding an app later does not mean editing the protection rules.
+  # `always()` matters: without it a skipped dependency makes this skip too, and a
+  # skipped required check blocks the merge forever.
+  ci:
+    name: CI
+    needs: [web, customer]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if anything failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - run: echo "All required checks passed or were skipped."

@@ -7,7 +7,9 @@
   ],
   "scripts": {
     "web": "npm run dev --workspace=web",
-    "customer": "npm run start --workspace=customer"
+    "customer": "npm run start --workspace=customer",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
   },
   "engines": {
     "node": ">=22"

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { API_BASE_URL, assetUrl, describeApiHost } from '@/lib/api-host'
+import { apiGet } from '@/lib/api'
 
 /**
  * The first real screen: kitchens near you, from the actual Go API.
@@ -20,6 +21,13 @@ import { API_BASE_URL, assetUrl, describeApiHost } from '@/lib/api-host'
  * It shows the resolved API host on screen. That is not debug clutter left in by
  * accident — "Network request failed" is indistinguishable from a dead server, and
  * seeing which URL was attempted turns the commonest setup problem into a glance.
+ *
+ * FETCHED WITH TanStack Query, not useEffect. The web app fetches in effects and
+ * carries eslint suppressions for it; the comments there name a data library as the
+ * real fix, so this app starts with one instead of inheriting the debt. Compare
+ * what is gone: no effect, no AbortController, no `loaded` flag, no
+ * abort-is-not-an-error branch, no unmounted-component question. About thirty lines
+ * of infrastructure that were never product.
  */
 
 type Kitchen = {
@@ -39,37 +47,24 @@ type Kitchen = {
 const CENTRE = { lat: 26.85, lng: 80.947 }
 
 export default function KitchensScreen() {
-  const [kitchens, setKitchens] = useState<Kitchen[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const { data, error, isPending, isRefetching, refetch } = useQuery({
+    /*
+      The key includes the coordinates. That is not decoration: it is what makes
+      the cache correct. Change location and it becomes a different query with its
+      own entry, rather than showing Lucknow's kitchens under a Kanpur heading
+      while the new request is in flight.
+    */
+    queryKey: ['kitchens', 'nearby', CENTRE.lat, CENTRE.lng],
+    queryFn: ({ signal }) =>
+      apiGet<{ kitchens: Kitchen[] }>(
+        `/kitchens/nearby?lat=${CENTRE.lat}&lng=${CENTRE.lng}&radius_m=15000`,
+        // Query hands us a signal and aborts it on unmount. That is the plumbing
+        // the web app had to write by hand, twice.
+        signal,
+      ),
+  })
 
-  const load = useCallback(async () => {
-    try {
-      const url =
-        `${API_BASE_URL}/kitchens/nearby` +
-        `?lat=${CENTRE.lat}&lng=${CENTRE.lng}&radius_m=15000`
-      const res = await fetch(url, {
-        headers: { Accept: 'application/json' },
-        // React Native's fetch has no timeout either. Same trap as the web client.
-        signal: AbortSignal.timeout(10_000),
-      })
-      const body = await res.json()
-      if (body.error) throw new Error(body.error.message)
-      // The API wraps everything in { data: ... } — same envelope as the web app.
-      setKitchens(body.data?.kitchens ?? [])
-      setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reach the API.')
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
+  const kitchens = data?.kitchens ?? []
 
   return (
     <View style={styles.screen}>
@@ -81,12 +76,12 @@ export default function KitchensScreen() {
         <Text style={styles.hostWhy}>{describeApiHost()}</Text>
       </View>
 
-      {loading ? (
+      {isPending ? (
         <ActivityIndicator style={styles.centre} size="large" />
       ) : error ? (
         <View style={styles.centre}>
           <Text style={styles.errorTitle}>Could not reach the API</Text>
-          <Text style={styles.errorBody}>{error}</Text>
+          <Text style={styles.errorBody}>{error.message}</Text>
           <Text style={styles.errorHint}>
             Is the Go server running? On a real device, the phone and this Mac must
             be on the same wifi.
@@ -98,13 +93,9 @@ export default function KitchensScreen() {
           keyExtractor={(k) => k.id}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true)
-                void load()
-              }}
-            />
+            // `isRefetching` comes from Query, so pull-to-refresh needs no state
+            // of its own and cannot get stuck spinning after a failed request.
+            <RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />
           }
           renderItem={({ item }) => (
             <View style={styles.card}>

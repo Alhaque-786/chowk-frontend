@@ -1,5 +1,8 @@
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+
+import { queryClient } from '@/lib/query'
 
 /**
  * The root layout.
@@ -15,7 +18,7 @@ import { StatusBar } from 'expo-status-bar'
  */
 export default function RootLayout() {
   return (
-    <>
+    <QueryClientProvider client={queryClient}>
       {/* Dark text on the light ground, matching the web app's light-only theme. */}
       <StatusBar style="dark" />
       <Stack
@@ -26,6 +29,6 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#FAF6EF' },
         }}
       />
-    </>
+    </QueryClientProvider>
   )
 }
