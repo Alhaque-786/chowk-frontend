@@ -1,14 +1,27 @@
+# Dependencies
 node_modules/
-.next/
-out/
-build/
 
-# Secrets and local overrides — never committed.
+# Build output
+.next/
+dist/
+build/
+*.tsbuildinfo
+
+# Expo
+.expo/
+# Native build output from `expo prebuild`. Scoped to the app directories rather
+# than matching any android/ or ios/ anywhere in the tree.
+apps/*/android/
+apps/*/ios/
+
+# Environment — never commit real values
 .env
 .env.local
 .env*.local
-!.env.local.example
 
-*.tsbuildinfo
-next-env.d.ts
+# OS
 .DS_Store
+
+# Logs
+*.log
+npm-debug.log*
