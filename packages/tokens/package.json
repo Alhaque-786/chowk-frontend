@@ -10,7 +10,8 @@
   "scripts": {
     "generate": "node --experimental-strip-types --no-warnings bin/generate.ts",
     "check": "node --experimental-strip-types --no-warnings bin/generate.ts --check",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
     "typescript": "^5"

@@ -49,7 +49,7 @@ jobs:
               - 'package-lock.json'
 
   web:
-    name: Web — typecheck, lint, build
+    name: Web — typecheck, lint, test, build, HTML contract
     needs: changes
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -94,6 +94,12 @@ jobs:
       - name: Tokens — generated CSS is current
         run: npm run check --workspace=@chowk/tokens
 
+      # Proves the mapping is CORRECT, not merely current. `check` above compares the
+      # checked-in file against the generator; regenerate a wrong Tailwind radius
+      # table and the check goes green while every corner in the app reshapes.
+      - name: Tokens — unit tests
+        run: npm run test --workspace=@chowk/tokens
+
       - name: Typecheck
         run: npm run typecheck --workspace=web
 
@@ -102,11 +108,49 @@ jobs:
       - name: Lint
         run: npm run lint --workspace=web
 
+      # Unit tests BEFORE the build: they run in under a second and cover the pure
+      # logic where a mistake is silent — money formatting, the offer index, and the
+      # location cookie, which is untrusted client-writable input.
+      - name: Unit tests
+        run: npm run test --workspace=web
+
       - name: Build
         run: npm run build --workspace=web
 
+      # -----------------------------------------------------------------------
+      # THE RENDERED-DOCUMENT CONTRACT, against a real `next start`.
+      #
+      # Every structural bug this page actually had was invisible to a component
+      # test: removing the hero removed the page's only h1; adding it back created a
+      # second one; the h1 arrived in the byte stream after four h2 elements because
+      # it sat behind a Suspense boundary; and five sections once shipped at
+      # opacity:0, so the page read as empty without JavaScript. None of those is a
+      # property of a component — they are properties of the assembled document.
+      #
+      # NO BACKEND NEEDED, and that is checked rather than assumed: with Postgres
+      # stopped the page still returns 200 with exactly one h1, because the hero is
+      # awaited directly and never calls the API. So this runs without standing up
+      # the Go service and a database from another repository.
+      #
+      # WHAT THIS DOES NOT COVER, stated plainly: the kitchen cards themselves. Those
+      # assertions are gated behind E2E_WITH_DATA and do not run here. CI proves the
+      # SHAPE of the page, not that it has food on it. Closing that gap means running
+      # the backend as a CI service — worth doing, and not done yet.
+      # -----------------------------------------------------------------------
+      - name: Rendered HTML contract
+        run: |
+          npm run start --workspace=web > /tmp/next.log 2>&1 &
+          for i in $(seq 1 45); do
+            curl -sf -o /dev/null http://localhost:3000/ && break
+            sleep 1
+          done
+          if ! curl -sf -o /dev/null http://localhost:3000/; then
+            echo "::error::next start never became ready"; cat /tmp/next.log; exit 1
+          fi
+          E2E_BASE_URL=http://localhost:3000 npm run test --workspace=web
+
   customer:
-    name: Customer app — typecheck, lint
+    name: Customer app — typecheck, lint, test
     needs: changes
     if: needs.changes.outputs.customer == 'true'
     runs-on: ubuntu-latest
@@ -123,6 +167,19 @@ jobs:
 
       - name: Lint
         run: npm run lint --workspace=customer
+
+      # Pure modules only — the per-platform API host resolution, which is the single
+      # most commonly botched thing when moving from web to mobile and whose every
+      # failure mode reads as "Network request failed". Two of them already happened:
+      # images 404'd because they are served on :3000 and not by the API on :8080,
+      # and `localhost` on a real device means the device.
+      #
+      # No component rendering: that needs a native preset, and the renderer would
+      # not run the Reanimated worklets that ARE the behaviour on that screen. It
+      # would assert a View exists while the animation — the part that broke four
+      # times this week — stayed invisible to it.
+      - name: Unit tests
+        run: npm run test --workspace=customer
 
       # NO native build here, deliberately. Compiling an iOS or Android binary
       # needs a macOS runner or the Android SDK and takes 15+ minutes — that
