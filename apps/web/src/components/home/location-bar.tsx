@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Crosshair, Home, MapPin, Search } from 'lucide-react'
-import Link from 'next/link'
+import { Check, ChevronDown, Crosshair, Home, MapPin } from 'lucide-react'
 import { Sheet } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { SERVING_AREAS } from '@/lib/serving-areas'
@@ -39,11 +38,22 @@ import { cn } from '@/lib/cn'
 export function LocationBar({
   label,
   isFallback,
+  tone = 'onLight',
 }: {
   /** The active location's display name, resolved on the server. */
   label: string
   /** True when this is the launch-city default and not the customer's choice. */
   isFallback: boolean
+  /**
+   * Which ground this sits on.
+   *
+   * A `tone` prop rather than a caller-supplied className, because the two variants
+   * are not one style with a colour swapped — on terracotta the pin and the chevron
+   * have to lose the brand indigo entirely, and the "Set your location" chip has to
+   * invert. Passing classes down would let a caller produce indigo-on-terracotta,
+   * which is the pairing this exists to prevent.
+   */
+  tone?: 'onLight' | 'onDark'
 }) {
   const [picking, setPicking] = useState(false)
   const [addresses, setAddresses] = useState<Address[] | null>(null)
@@ -129,6 +139,8 @@ export function LocationBar({
     })
   }
 
+  const dark = tone === 'onDark'
+
   return (
     <>
       <div className="flex items-center gap-3">
@@ -137,16 +149,31 @@ export function LocationBar({
           onClick={openPicker}
           className="group flex min-w-0 items-center gap-2 rounded-xl px-1 py-1 text-left"
         >
-          <MapPin className="size-4 shrink-0 text-brand" />
+          <MapPin className={cn('size-4 shrink-0', dark ? 'text-white' : 'text-brand')} />
           <span className="min-w-0">
-            <span className="block text-[0.6875rem] font-medium uppercase tracking-wider text-ink-faint">
+            <span
+              className={cn(
+                'block text-[0.6875rem] font-medium uppercase tracking-wider',
+                dark ? 'text-white/70' : 'text-ink-faint',
+              )}
+            >
               {/* The wording carries the distinction: a guess is never presented
                   as the customer's choice. */}
               {isFallback ? 'Showing' : 'Deliver to'}
             </span>
-            <span className="flex items-center gap-1 text-sm font-semibold text-ink">
+            <span
+              className={cn(
+                'flex items-center gap-1 text-sm font-semibold',
+                dark ? 'text-white' : 'text-ink',
+              )}
+            >
               <span className="truncate">{label}</span>
-              <ChevronDown className="size-3.5 shrink-0 text-ink-faint transition-transform group-hover:translate-y-px" />
+              <ChevronDown
+                className={cn(
+                  'size-3.5 shrink-0 transition-transform group-hover:translate-y-px',
+                  dark ? 'text-white/75' : 'text-ink-faint',
+                )}
+              />
             </span>
           </span>
         </button>
@@ -155,23 +182,17 @@ export function LocationBar({
           <button
             type="button"
             onClick={openPicker}
-            className="shrink-0 rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent ring-1 ring-accent/20"
+            className={cn(
+              'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
+              dark
+                ? 'bg-white/20 text-white ring-1 ring-white/30 backdrop-blur-sm'
+                : 'bg-accent-soft text-accent ring-1 ring-accent/20',
+            )}
           >
             Set your location
           </button>
         )}
       </div>
-
-      {/* Search is a LINK, not an input, so the home page ships no search
-          JavaScript. The real input lives on /search and gets focus on arrival —
-          the interaction feels identical and the home page stays light. */}
-      <Link
-        href="/search"
-        className="mt-3 flex items-center gap-2.5 rounded-xl border border-rule-strong bg-surface px-3.5 py-3 text-sm text-ink-faint transition-colors hover:border-brand/40"
-      >
-        <Search className="size-4 shrink-0" />
-        <span>Search for biryani, dosa, thali…</span>
-      </Link>
 
       <Sheet
         open={picking}

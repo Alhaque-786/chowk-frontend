@@ -1,8 +1,9 @@
 import { Suspense } from 'react'
-import { IndianRupee, ShieldCheck, Timer } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, IndianRupee, ShieldCheck, Timer } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Reveal } from '@/components/ui/reveal'
-import { LocationBar } from '@/components/home/location-bar'
+import { HeroBand } from '@/components/home/hero-band'
 import { CuisineRail } from '@/components/home/cuisine-rail'
 import { OffersRail } from '@/components/home/offers-rail'
 import { KitchenList } from '@/components/home/kitchen-list'
@@ -35,7 +36,25 @@ export const metadata: Metadata = {
  * purpose: this line describes where the BUSINESS operates, which is the same for
  * every visitor, unlike the delivery location below it.
  */
-export default function HomePage() {
+export default async function HomePage() {
+  /*
+    AWAITED HERE, NOT WRAPPED IN Suspense, and that is a correction.
+
+    Both the hero and the compact bar were behind Suspense boundaries, which put
+    their skeletons into the byte stream first and appended the real content later —
+    so the h1 arrived in the raw HTML AFTER four h2 elements from the footer and the
+    sections below. Streaming repairs the DOM order in a browser that runs the
+    inserting script; it does not repair the document a non-executing reader sees.
+
+    A Suspense boundary earns that cost when the thing inside it waits on a network.
+    This one reads a cookie: no request, no measurable delay, and a skeleton that
+    could never be on screen long enough to see. So the shell waits for it, the h1
+    lands first, and two skeletons that existed to cover nothing are gone.
+
+    The sections below KEEP their boundaries — those genuinely call the API.
+  */
+  const location = await getDeliveryLocation()
+
   return (
     <>
       <script
@@ -44,32 +63,66 @@ export default function HomePage() {
       />
 
       {/*
-        THE ORDER IS THE POINT, and it changed deliberately.
+        THE ORDER IS THE POINT, and the distinction below is a real one.
 
-        This page used to open with a full-height editorial hero: big display
-        type, a tilted 3D card stack, a stat band. It looked good and it was the
-        wrong page. The stack was `hidden lg:block`, so on any window narrower
-        than 1024px the first screen had no food on it at all, and the first
-        kitchen photograph sat 96% of the way down the document. Someone deciding
-        what to eat had to scroll past a manifesto to see a single dish.
+        This page used to open with a full-height editorial hero: big display type, a
+        tilted 3D card stack, a stat band. It looked good and it was the wrong page.
+        The stack was `hidden lg:block`, so on any window narrower than 1024px the
+        first screen had no food on it at all, and the first kitchen photograph sat
+        96% of the way down the document. Someone deciding what to eat had to scroll
+        past a manifesto to see a single dish.
 
         Zomato's delivery listing and Swiggy's order-online page both do the same
-        thing, and neither has a marketing hero: location and search, then a rail
-        of circular dish photographs, then filters, then straight into the card
-        grid. The reason is that these are UTILITY pages. The visitor has already
-        decided to order; what they have not decided is what. Selling them the
-        proposition first answers a question they did not ask.
+        thing, and neither has a marketing hero: location and search, then a rail of
+        circular dish photographs, then filters, then straight into the card grid.
+        The reason is that these are UTILITY pages. The visitor has already decided
+        to order; what they have not decided is what.
 
-        So: search, cuisines, kitchens. The proposition moved to the bottom, where
-        somebody still browsing will reach it, and /partner keeps the full pitch.
+        The terracotta band below is NOT that hero returning, and the difference is
+        not a matter of degree. It is roughly 200px tall, it contains no proposition
+        and no decoration, and every element in it is a control or a label: where we
+        are delivering, and a search field. The first kitchen photograph is still
+        above the fold on a phone. What was wrong with the old hero was that it
+        SPENT the first screen on selling; this spends it on the two questions a
+        visitor actually arrives with.
+
+        The proposition stays at the bottom, where somebody still browsing will
+        reach it, and /partner keeps the full pitch.
       */}
-      <section className="sticky top-0 z-30 border-b border-rule bg-surface/95 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
-          <Suspense fallback={<LocationBarSkeleton />}>
-            <ActiveLocationBar />
-          </Suspense>
-        </div>
-      </section>
+      {/*
+        THE TERRACOTTA BAND, brought across from the customer app.
+
+        The app's home screen was signed off, so the identity travels to web rather
+        than the two surfaces each having their own warm treatment. Same gradient
+        stops (a shared token), same rounded bottom edge, same search card straddling
+        that edge.
+
+        The band is NOT sticky, and nothing here tries to reproduce the app's blurred
+        header appearing on scroll — see the note below on why that attempt was
+        removed rather than fixed.
+      */}
+      <HeroBand label={location.label} isFallback={location.isFallback} />
+
+      {/*
+        NO SECOND STICKY BAR HERE, and removing it fixed two bugs at once.
+
+        The first attempt put a frosted location bar directly under the band, pinned
+        with `sticky top-0 z-30` — mirroring the app's blurred header. Both were
+        wrong:
+
+          1. site-header.tsx is ALREADY `sticky top-0 z-30`. Two elements pinned to
+             the same offset in the same stacking layer overlap the moment you
+             scroll, and it is invisible at rest, which is where it would have been
+             found — in production, by a customer.
+          2. The location control then appeared TWICE within 200px, because CSS
+             sticky cannot reproduce "hidden until scrolled past the hero" the way
+             the app's scroll handler does. The app never shows both; web would have
+             shown both, at rest, always.
+
+        So the site header stays the one piece of persistent chrome, and the location
+        control lives once — in the band. If a pinned location is wanted on long
+        pages later, it belongs IN that header rather than beside it.
+      */}
 
       {/*
         NOTHING ABOVE THE FOLD IS WRAPPED IN Reveal, and the three sections below
@@ -92,7 +145,7 @@ export default function HomePage() {
         "Kitchens near Lucknow", which read as a rendering fault. One element per
         section, and it is better markup regardless.
       */}
-      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 sm:pt-8">
+      <div className="mx-auto max-w-6xl px-4 pt-8 sm:px-6 sm:pt-10">
         <CuisineRail />
       </div>
 
@@ -160,15 +213,35 @@ async function Kitchens() {
 
   return (
     <section>
-      <SectionHeading
-        // The page's h1: this page IS a list of kitchens near you.
-        as="h1"
-        eyebrow={`${kitchens.length} cooking near you`}
-        title={`Kitchens near ${location.label}`}
-        // Only offered when there is actually more to see than the list shows.
-        action={kitchens.length > 3 ? { href: '/kitchens', label: 'See all' } : undefined}
-      />
-      <div className="mt-5">
+      {/*
+        NO BIG HEADING HERE ANY MORE, and no h1 — the hero band now carries both.
+
+        "Kitchens near Lucknow" was this section's title AND the page's h1. Putting
+        the same words in the hero without changing this would have shipped the
+        phrase twice on one screen and, worse, two h1 elements — invisible on screen
+        and very visible to a crawler and to a screen reader's heading list.
+
+        What replaces it is the app's line: a plain count above the cards. On a page
+        whose subject is already stated a hundred pixels higher, a second 28px
+        heading is repetition dressed as structure.
+      */}
+      <div className="flex items-end justify-between gap-4">
+        <p className="text-sm font-semibold text-ink-soft">
+          {kitchens.length} {kitchens.length === 1 ? 'kitchen' : 'kitchens'} near{' '}
+          {location.label}
+        </p>
+        {/* Only offered when there is actually more to see than the list shows. */}
+        {kitchens.length > 3 && (
+          <Link
+            href="/kitchens"
+            className="group inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand hover:underline"
+          >
+            See all
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        )}
+      </div>
+      <div className="mt-4">
         <KitchenList kitchens={kitchens} offers={offers} />
       </div>
     </section>
@@ -274,23 +347,3 @@ function ListSkeleton() {
  * needs to be a client component for the geolocation prompt and the sheet. This
  * component is the seam between the two.
  */
-async function ActiveLocationBar() {
-  const location = await getDeliveryLocation()
-  return <LocationBar label={location.label} isFallback={location.isFallback} />
-}
-
-/** Matches the location bar's height, so nothing below it shifts when it lands. */
-function LocationBarSkeleton() {
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <Skeleton className="size-4 rounded-full" />
-        <div>
-          <Skeleton className="h-2.5 w-16" />
-          <Skeleton className="mt-1.5 h-4 w-28" />
-        </div>
-      </div>
-      <Skeleton className="mt-3 h-11 w-full rounded-xl" />
-    </div>
-  )
-}
