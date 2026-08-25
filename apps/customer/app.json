@@ -8,7 +8,9 @@
     "scheme": "chowk",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.chowk.customer",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +19,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.chowk.customer",
+      "versionCode": 1
     },
     "web": {
       "output": "static",
