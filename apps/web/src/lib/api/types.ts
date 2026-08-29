@@ -380,6 +380,14 @@ export type PaymentIntent = {
   payment_id: string
   provider_ref: string
   client_secret: string
+  /**
+   * Which gateway opened this intent, and therefore which SDK completes it.
+   *
+   * Sent by the server rather than assumed by the client. The provider is
+   * expected to multiply, and a client that hard-codes one breaks at the payment
+   * step of somebody's order on the day a second appears.
+   */
+  provider: string
   status: string
   requires_action: boolean
 }

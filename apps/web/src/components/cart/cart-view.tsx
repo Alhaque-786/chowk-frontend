@@ -16,7 +16,9 @@ import { requireAuth, useIsSignedIn } from '@/lib/auth-gate'
 import { messageFor } from '@/lib/api/errors'
 import OrderingService from '@/services/OrderingService'
 import AddressService from '@/services/AddressService'
-import type { Address, Cart } from '@/lib/api/types'
+import { PaymentMethodPicker } from '@/components/cart/payment-method'
+import { completePayment } from '@/lib/payments/providers'
+import type { Address, Cart, PaymentMethod } from '@/lib/api/types'
 
 /**
  * The cart, its totals, and the place-order action.
@@ -44,6 +46,9 @@ export function CartView() {
   */
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
+  // UPI by default: it is how most of India pays online, it costs the platform
+  // nothing, and a prepaid order cannot be refused at the door.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi')
   const [error, setError] = useState<string | null>(null)
   const [addingAddress, setAddingAddress] = useState(false)
 
@@ -224,13 +229,37 @@ export function CartView() {
       const result = await OrderingService.checkout(
         {
           address_id: addressId,
-          payment_method: 'cod',
+          payment_method: paymentMethod,
           // Only a code the server accepted. A typed-but-unchecked one would be
           // rejected at checkout and lose the whole order to a typo.
           ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
         },
         key,
       )
+
+      /*
+        THE ORDER EXISTS BEFORE THE MONEY DOES, and everything below is shaped
+        around that.
+
+        Checkout has already reserved stock, redeemed the coupon and written the
+        order. If the customer now abandons the payment sheet, the order is not
+        lost and must not be treated as a failure — it sits in pending_payment and
+        stays payable. So a dismissed sheet navigates to the order page like any
+        other outcome, rather than throwing the customer back to a cart that has
+        already been emptied.
+
+        Nothing here decides that a payment succeeded. The signed webhook does,
+        server to server; the order page polls and will show it. A client that
+        marked its own order paid would be trusting a value it could forge.
+      */
+      if (result.payment) {
+        await completePayment({
+          intent: result.payment,
+          amountMinor: result.order.total_minor,
+          orderNumber: result.order.number,
+        })
+      }
+
       // `result.order.id`, not `result.order_id` — checkout returns the whole
       // order, not just a reference. Worth the note: the wrong version compiled
       // fine against a guessed type and would have navigated to /orders/undefined.
@@ -490,6 +519,8 @@ export function CartView() {
         )}
       </section>
 
+      <PaymentMethodPicker value={paymentMethod} onChange={setPaymentMethod} disabled={busy} />
+
       {error && (
         <p className="rounded-xl bg-danger-soft px-3.5 py-3 text-sm text-danger" role="alert">
           {error}
@@ -506,7 +537,11 @@ export function CartView() {
           disabled={busy || !cart.kitchen_open || soldOut.length > 0 || !addressId}
         >
           {busy && <Loader2 className="size-4 animate-spin" />}
-          Place order &middot; {formatRupees(cart.total_minor)}
+          {/* The label states what the tap does. "Place order" in front of a
+              payment sheet is a small lie, and the moment a customer least wants
+              a surprise is the one where money moves. */}
+          {paymentMethod === 'cod' ? 'Place order' : 'Pay'} &middot;{' '}
+          {formatRupees(cart.total_minor)}
         </Button>
         <Button variant="secondary" size="lg" onClick={clear} disabled={busy}>
           <Trash2 className="size-4" />
@@ -515,8 +550,9 @@ export function CartView() {
       </div>
 
       <p className="text-xs leading-relaxed text-ink-faint">
-        Cash on delivery for now. Online payment is wired on the backend and not
-        yet connected here.
+        {paymentMethod === 'cod'
+          ? 'Pay the rider in cash when your food arrives. Please keep change handy.'
+          : 'You will be taken to your UPI app to approve the payment. Your order is placed either way — if you close the payment screen you can pay from the order page.'}
       </p>
     </div>
   )
