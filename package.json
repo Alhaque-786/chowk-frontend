@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "check": "npm run check:tokens && npm run typecheck && npm run lint && npm run test",
+    "check": "npm run check:tokens && npm run check:roles && npm run typecheck && npm run lint && npm run test",
+    "check:roles": "node scripts/check-roles.mjs",
     "check:tokens": "npm run check --workspace=@chowk/tokens",
     "customer": "npm run start --workspace=customer",
     "lint": "npm run lint --workspaces --if-present",

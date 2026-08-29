@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Logo } from './logo'
 import { CartButton } from './cart-button'
+import { StaffLink } from '@/components/layout/staff-link'
 import { AccountLink } from './account-link'
 
 /**
@@ -29,8 +30,10 @@ export function SiteHeader() {
           <HeaderLink href="/kitchens">Kitchens</HeaderLink>
           <HeaderLink href="/offers">Offers</HeaderLink>
           <HeaderLink href="/orders">Orders</HeaderLink>
-          {/* The only session-dependent part of the header, so the only part that
-              needs to be a client island. */}
+          {/* The session-dependent parts, and the only ones that need to be client
+              islands. StaffLink renders nothing for a customer, which is almost
+              everyone, so the customer header is unchanged. */}
+          <StaffLink />
           <AccountLink />
         </nav>
 

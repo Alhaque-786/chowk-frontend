@@ -33,6 +33,20 @@ import type { Cart, CheckoutResult, Order, PaymentMethod } from '@/lib/api/types
  * should match the number of things being delivered.
  */
 const OrderingService = {
+  /**
+   * The customer's own order history, newest first.
+   *
+   * Scoped by the access token — there is no parameter for whose orders to fetch,
+   * which is a stronger guarantee than a check would be.
+   *
+   * Not cached, for the same reason getOrder is not: half of why somebody opens
+   * this page is to see whether the status has moved.
+   */
+  listOrders: async (options?: CallOptions): Promise<Order[]> => {
+    const res = await api.get<{ orders: Order[] }>('/orders', options)
+    return res.orders ?? []
+  },
+
   getCart: async (options?: CallOptions): Promise<Cart> => {
     const cart = await api.get<Cart>('/cart', options)
     setCartCount(cart.item_count ?? 0)
