@@ -237,3 +237,77 @@ h1, h2, h3 {
     animation: none;
   }
 }
+
+/* Long-form prose, used only by the policy and support pages.
+
+   Defined once here rather than repeated as utility classes on every heading and
+   paragraph across five documents. These pages are the only ones on the site
+   somebody reads top to bottom instead of scanning, and the difference is the
+   whole point: generous line height, real space between sections, and headings
+   that separate rather than decorate. Repeating a dozen classes per element
+   across five files is how two of them quietly end up different. */
+.prose-chowk {
+  color: var(--color-ink-soft);
+  line-height: 1.7;
+}
+
+.prose-chowk h1 {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.prose-chowk h2 {
+  margin-top: 2.5rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.35;
+  text-wrap: balance;
+}
+
+.prose-chowk h3 {
+  margin-top: 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.prose-chowk p,
+.prose-chowk ul,
+.prose-chowk ol {
+  margin-top: 1rem;
+}
+
+.prose-chowk ul,
+.prose-chowk ol {
+  padding-left: 1.25rem;
+}
+
+.prose-chowk ul { list-style: disc; }
+.prose-chowk ol { list-style: decimal; }
+.prose-chowk li { margin-top: 0.375rem; }
+
+.prose-chowk strong { color: var(--color-ink); font-weight: 600; }
+
+.prose-chowk a {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The lead paragraph: what this document is, before the clauses start. */
+.prose-chowk .lead {
+  margin-top: 1rem;
+  font-size: 1.0625rem;
+  color: var(--color-ink);
+}
+
+/* A definition row, for the "who we are" blocks that every policy page repeats. */
+.prose-chowk dl { margin-top: 1rem; display: grid; gap: 0.5rem; }
+.prose-chowk dt { font-weight: 600; color: var(--color-ink); font-size: 0.875rem; }
+.prose-chowk dd { font-size: 0.9375rem; }

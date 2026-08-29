@@ -6,6 +6,7 @@ import { Check, Loader2, PackageX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RiderCard } from '@/components/orders/rider-card'
 import { formatRupees } from '@/lib/format'
 import { messageFor } from '@/lib/api/errors'
 import OrderingService from '@/services/OrderingService'
@@ -214,6 +215,11 @@ export function OrderView({ orderId }: { orderId: string }) {
           })}
         </ol>
       )}
+
+      {/* Directly under the timeline, because "where is my food" is the question
+          this page exists to answer and the rider is the answer to it. Renders
+          nothing until somebody is actually assigned. */}
+      <RiderCard orderId={orderId} />
 
       <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
         <h2 className="font-display text-base font-bold text-ink">What you ordered</h2>
