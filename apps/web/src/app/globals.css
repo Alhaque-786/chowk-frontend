@@ -311,3 +311,35 @@ h1, h2, h3 {
 .prose-chowk dl { margin-top: 1rem; display: grid; gap: 0.5rem; }
 .prose-chowk dt { font-weight: 600; color: var(--color-ink); font-size: 0.875rem; }
 .prose-chowk dd { font-size: 0.9375rem; }
+
+/* The rider's dot on the delivery map.
+
+   A pulsing ring rather than a static pin, and the distinction is doing work:
+   the two pins on that map are FIXED places and this one is a person moving. A
+   third pin in a third colour would read as a third address. The pulse says
+   "live" without a legend. */
+.delivery-map-rider {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 0 rgb(193 68 14 / 0.5);
+  animation: rider-pulse 2s ease-out infinite;
+}
+
+@keyframes rider-pulse {
+  to { box-shadow: 0 0 0 14px rgb(193 68 14 / 0); }
+}
+
+/* A pulse that never stops is exactly the kind of motion that triggers
+   discomfort, and the dot's position already carries the information. */
+@media (prefers-reduced-motion: reduce) {
+  .delivery-map-rider { animation: none; }
+}
+
+/* MapLibre paints its own controls and attribution; keep them legible on both
+   themes rather than inheriting whatever the library ships. */
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}

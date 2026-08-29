@@ -3,6 +3,8 @@
 import { Bike, ExternalLink, Phone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import DeliveryService, { type Delivery } from '@/services/DeliveryService'
+import TrackingService, { type LivePosition } from '@/services/TrackingService'
+import dynamic from 'next/dynamic'
 import { ApiError } from '@/lib/api/errors'
 
 /**
@@ -23,10 +25,45 @@ import { ApiError } from '@/lib/api/errors'
  *
  * Polls independently of the order, and stops once the delivery is terminal.
  */
-const POLL_MS = 20_000
+/*
+  The map is loaded only when one is actually drawn.
 
-export function RiderCard({ orderId }: { orderId: string }) {
+  next/dynamic rather than a plain import so MapLibre's JavaScript AND its
+  stylesheet both split out of the orders route. Most people opening an order are
+  reading a receipt, not watching a rider, and they should not download a mapping
+  library to do it.
+
+  ssr: false because maplibre-gl touches `window` at module scope and would fail
+  server rendering outright.
+*/
+const DeliveryMap = dynamic(
+  () => import('@/components/orders/delivery-map').then((m) => m.DeliveryMap),
+  { ssr: false },
+)
+
+const POLL_MS = 20_000
+/*
+  The rider moves; his name does not.
+
+  Position is polled four times as often as the delivery record, because they
+  change at completely different rates. One interval for both would mean either
+  re-fetching static fields every ten seconds or letting the dot lag half a
+  minute behind — a dot that stale is worse than none, since the customer plans
+  around it.
+*/
+const POSITION_POLL_MS = 10_000
+
+export function RiderCard({
+  orderId,
+  kitchen,
+  destination,
+}: {
+  orderId: string
+  kitchen?: { lat: number; lng: number }
+  destination?: { lat: number; lng: number }
+}) {
   const [delivery, setDelivery] = useState<Delivery | null>(null)
+  const [position, setPosition] = useState<LivePosition | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -66,6 +103,43 @@ export function RiderCard({ orderId }: { orderId: string }) {
       clearInterval(timer)
     }
   }, [orderId])
+
+  /*
+    Poll the position only while somebody is actually carrying the food.
+
+    Gated on the delivery status rather than run unconditionally: before pickup
+    there is nothing to draw, and after delivery the API refuses anyway. Polling
+    through both would be a request every ten seconds, per open tab, for a
+    guaranteed 204.
+  */
+  const carrying = delivery?.status === 'picked_up' || delivery?.status === 'at_pickup'
+
+  useEffect(() => {
+    // No cleanup of stale state here: clearing it would be a setState inside an
+    // effect, which is the pattern react-hooks/set-state-in-effect exists to
+    // catch. The render below gates on `carrying` as well as on `position`, so a
+    // position left over from before a drop is never drawn.
+    if (!carrying) return
+
+    const controller = new AbortController()
+
+    async function load() {
+      try {
+        setPosition(await TrackingService.position(orderId, { signal: controller.signal }))
+      } catch {
+        // Silent, and the dot simply stops updating. A failed position read is
+        // not worth an error on a page whose useful parts — status, ETA, the
+        // rider's number — are all still correct.
+      }
+    }
+
+    const timer = setInterval(() => void load(), POSITION_POLL_MS)
+    void load()
+    return () => {
+      controller.abort()
+      clearInterval(timer)
+    }
+  }, [orderId, carrying])
 
   // Nothing assigned yet, or nothing worth saying. The order timeline above
   // already tells the customer the kitchen is cooking.
@@ -134,6 +208,20 @@ export function RiderCard({ orderId }: { orderId: string }) {
           </div>
         </div>
       </div>
+
+      {/*
+        The map appears only once there is a rider position to put on it. A map
+        showing two static pins and no rider looks like tracking that has broken,
+        rather than a delivery that has not started.
+      */}
+      {carrying && position && (
+        <>
+          <DeliveryMap kitchen={kitchen} destination={destination} rider={position} />
+          <p className="mt-2 text-xs text-ink-faint">
+            Rider position as of {formatETA(position.recorded_at)}. Updates every few seconds.
+          </p>
+        </>
+      )}
     </section>
   )
 }

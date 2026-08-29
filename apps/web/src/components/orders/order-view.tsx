@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { RiderCard } from '@/components/orders/rider-card'
 import { formatRupees } from '@/lib/format'
 import { messageFor } from '@/lib/api/errors'
+import CatalogService from '@/services/CatalogService'
 import OrderingService from '@/services/OrderingService'
 import type { Order, OrderStatus } from '@/lib/api/types'
 import { cn } from '@/lib/cn'
@@ -38,6 +39,10 @@ const TERMINAL: OrderStatus[] = ['delivered', 'cancelled', 'rejected', 'refunded
 
 export function OrderView({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null)
+  // Where the food is coming from. Fetched once per kitchen rather than with the
+  // order, because a kitchen does not move and the order is re-polled every few
+  // seconds — refetching a fixed point on every tick would be pure waste.
+  const [kitchenPoint, setKitchenPoint] = useState<{ lat: number; lng: number }>()
   // Derived below, for the same reason as in the cart: a "has it finished" flag
   // is only ever set from the async path, so nothing needs setState in an effect.
   const [loaded, setLoaded] = useState(false)
@@ -122,6 +127,24 @@ export function OrderView({ orderId }: { orderId: string }) {
       setCancelling(false)
     }
   }
+
+  useEffect(() => {
+    const kitchenId = order?.kitchen_id
+    if (!kitchenId || kitchenPoint) return
+    const controller = new AbortController()
+
+    void (async () => {
+      try {
+        const kitchen = await CatalogService.getKitchen(kitchenId, { signal: controller.signal })
+        if (kitchen) setKitchenPoint({ lat: kitchen.latitude, lng: kitchen.longitude })
+      } catch {
+        // The map simply loses one of its two pins. Not worth surfacing: the
+        // rider's dot and the destination are the parts that answer the question.
+      }
+    })()
+
+    return () => controller.abort()
+  }, [order?.kitchen_id, kitchenPoint])
 
   if (!loaded) {
     return (
@@ -219,7 +242,15 @@ export function OrderView({ orderId }: { orderId: string }) {
       {/* Directly under the timeline, because "where is my food" is the question
           this page exists to answer and the rider is the answer to it. Renders
           nothing until somebody is actually assigned. */}
-      <RiderCard orderId={orderId} />
+      <RiderCard
+        orderId={orderId}
+        destination={
+          order.delivery_latitude && order.delivery_longitude
+            ? { lat: order.delivery_latitude, lng: order.delivery_longitude }
+            : undefined
+        }
+        kitchen={kitchenPoint}
+      />
 
       <section className="rounded-2xl bg-surface p-4 shadow-sm ring-1 ring-rule/70">
         <h2 className="font-display text-base font-bold text-ink">What you ordered</h2>

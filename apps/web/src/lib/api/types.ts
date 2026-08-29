@@ -369,6 +369,11 @@ export type Order = {
   /** Pre-formatted single line, e.g. "12 Hazratganj, Lucknow, 226001". The API
    *  flattens it, so there is no structured address to re-format here. */
   delivery_address?: string
+  /** Which kitchen is cooking it, so the map can find where it comes from. */
+  kitchen_id?: string
+  /** The destination as a point. Absent on older orders. */
+  delivery_latitude?: number
+  delivery_longitude?: number
   /** The SERVER's ruling on whether cancelling is still allowed — it depends on
    *  the order's state machine, so never infer it from `status` on the client. */
   can_cancel: boolean
